@@ -24,14 +24,14 @@ NestedModule:
   DscResource.Common:
     CopyOnly: true
     Path: ./output/RequiredModules/DscResource.Common # relative to , default to '/Modules/'
-    # Destination: './output///Modules/' # or override with path relative to 
+    # Destination: './output///Modules/' # or override with path relative to
     AddToManifest: false
     # include: '*.*'
     Exclude: PSGetModuleInfo.xml
     #Filter:
-  Folder.Common:
-    CopyOnly: true
-    AddToManifest: false
+  #Folder.Common:
+  #  CopyOnly: true
+  #  AddToManifest: false
 
 ####################################################
 #       Sampler Pipeline Configuration             #

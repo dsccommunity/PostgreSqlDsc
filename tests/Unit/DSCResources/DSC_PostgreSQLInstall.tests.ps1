@@ -10,7 +10,7 @@ Remove-Module $script:dscResourceName -force -ErrorAction SilentlyContinue
 $TestEnvironment = Initialize-TestEnvironment `
     -DSCModuleName $script:dscModuleName `
     -DSCResourceName $script:dscResourceName `
-    -ResourceType 'Class' `
+    -ResourceType 'Mof' `
     -TestType Unit
 
 #endregion HEADER
