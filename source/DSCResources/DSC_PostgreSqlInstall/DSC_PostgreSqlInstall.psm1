@@ -65,22 +65,52 @@ function Set-TargetResource
     (
         [Parameter(Mandatory = $true)]
         [System.String]
-        $Path,
+        $ServiceName,
 
         [Parameter(Mandatory = $true)]
-        [System.Boolean]
-        $ReadOnly,
-
-        [Parameter()]
-        [System.Boolean]
-        $Hidden,
-
-        [Parameter()]
-        [ValidateSet('Present', 'Absent')]
         [System.String]
-        $Ensure = 'Present'
+        $InstallerPath,
+
+        [Parameter()]
+        [System.String]
+        $Prefix = "C:\Program Files\$ServiceName",
+
+        [Parameter()]
+        [System.UInt16]
+        $Port = 5432,
+
+        [Parameter()]
+        [System.String]
+        $DataDir = "$Prefix\Data",
+
+        [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $ServiceAccount = (New-Object -TypeName PSCredential -ArgumentList ("NT AUTHORITY\NetworkService", (New-Object System.Security.SecureString))),
+
+        [Parameter()]
+        [System.String]
+        $Features = 'server,pgAdmin,stackbuilder,commandlinetools'
     )
 
+    $BuiltInAccounts = @('NT AUTHORITY\NetworkService')
+
+    $ServiceName = $ServiceName.Replace(" ", "_")
+
+    $Arguments = @(
+        "--prefix `"$Prefix`""
+        "--datadir `"$DataDir`""
+        "--servicename $ServiceName"
+        "--serviceaccount `"$($ServiceAccount.UserName)`""
+        "--serverport $Port"
+        "--enable-components $Features"
+        "--unattendedmodeui none --node unattended"
+    )
+    if (-not ($ServiceAccount.UserName -in $BuiltInAccounts))
+    {
+        $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+    }
+
+    Start-Process $InstallerPath -ArgumentList ($Arguments.join(" ")) -Wait
 }
 
 <#

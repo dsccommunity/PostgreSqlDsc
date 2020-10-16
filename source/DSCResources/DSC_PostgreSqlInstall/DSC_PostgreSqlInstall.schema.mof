@@ -2,6 +2,7 @@
 class DSC_PostGreSqlInstall : OMI_BaseResource
 {
     [Key, Description("Specifies the name of the Postgres service.")] String ServiceName;
+    [Required, Description("Specifies the path of the installer.")] String InstallerPath;
     [Write, Description("Specifies the prefix for the install.")] String Prefix;
     [Write, Description("Specifies the port of the service.")] UInt16 Port;
     [Write, Description("Specifies the data directory inside the prefix (Prefix\DataDir).")] String DataDirectory;
