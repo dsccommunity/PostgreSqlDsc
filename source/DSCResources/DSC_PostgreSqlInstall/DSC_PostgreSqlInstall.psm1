@@ -111,8 +111,6 @@ function Set-TargetResource
         $Features
     )
 
-
-
     $ServiceName = $ServiceName.Replace(" ", "_")
     if ($null -eq $Prefix) { $Prefix = "C:\Program Files\$ServiceName" }
     if ($null -eq $Port) { $Port = 5432 }

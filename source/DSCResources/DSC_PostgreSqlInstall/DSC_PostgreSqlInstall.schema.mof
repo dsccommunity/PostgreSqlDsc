@@ -1,5 +1,5 @@
 [ClassVersion("1.0.0"), FriendlyName("PostgreSqlInstall")]
-class DSC_PostGreSqlInstall : OMI_BaseResource
+class DSC_PostgreSqlInstall : OMI_BaseResource
 {
     [Key, Description("Specifies the name of the Postgres service.")] String ServiceName;
     [Required, Description("Specifies the path of the installer.")] String InstallerPath;
