@@ -32,14 +32,59 @@ function Get-TargetResource
     param
     (
         [Parameter(Mandatory = $true)]
+        [ValidateSet('Present', 'Absent')]
         [System.String]
-        $Path,
+        $Ensure,
 
         [Parameter(Mandatory = $true)]
-        [System.Boolean]
-        $ReadOnly
+        [ValidateSet('9', '10', '11', '12', '13')]
+        [System.String]
+        $Version,
+
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $InstallerPath,
+
+        [Parameter()]
+        [System.String]
+        $ServiceName,
+
+        [Parameter()]
+        [System.String]
+        $Prefix,
+
+        [Parameter()]
+        [System.UInt16]
+        $Port,
+
+        [Parameter()]
+        [System.String]
+        $DataDir,
+
+        [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $ServiceAccount,
+
+        [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $SuperAccount,
+
+        [Parameter()]
+        [System.String]
+        $Features,
+
+        [Parameter()]
+        [System.String]
+        $OptionFile
     )
 
+    $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+    if ($null -eq $uninstallRegistry)
+    {
+        return @{
+
+        }
+    } $uninstallRegistry.GetValue('UninstallString')
     # Placeholder to test Set-Target
     return @{
         ServiceName     = 'Postgres'
@@ -83,12 +128,22 @@ function Set-TargetResource
     param
     (
         [Parameter(Mandatory = $true)]
+        [ValidateSet('Present', 'Absent')]
         [System.String]
-        $ServiceName,
+        $Ensure,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('9', '10', '11', '12', '13')]
+        [System.String]
+        $Version,
 
         [Parameter(Mandatory = $true)]
         [System.String]
         $InstallerPath,
+
+        [Parameter()]
+        [System.String]
+        $ServiceName,
 
         [Parameter()]
         [System.String]
@@ -112,52 +167,97 @@ function Set-TargetResource
 
         [Parameter()]
         [System.String]
-        $Features
+        $Features,
+
+        [Parameter()]
+        [System.String]
+        $OptionFile
     )
 
-    $ServiceName = $ServiceName.Replace(" ", "_")
-    $Arguments = @(
-        "--servicename $ServiceName"
-        "--unattendedmodeui none --node unattended"
-    )
-
-    if (-not [string]::IsNullOrEmpty($Prefix))
+    if ($Ensure -eq 'Present')
     {
-        $Arguments += "--prefix `"$Prefix`""
-    }
 
-    if (-not [string]::IsNullOrEmpty($DataDir))
-    {
-        $Arguments += "--datadir `"$DataDir`""
-    }
+        $Arguments = @(
+            "--unattendedmodeui none"
+            "--mode unattended"
+        )
 
-    if (-not [string]::IsNullOrEmpty($Port))
-    {
-        $Arguments += "--serverport $Port"
-    }
-
-    if (-not [string]::IsNullOrEmpty($Features))
-    {
-        $Arguments += "--enable-components `"$Features`""
-    }
-
-    $BuiltInAccounts = @('NT AUTHORITY\NetworkService', 'NT AUTHORITY\System', 'NT AUTHORITY\Local Service')
-    if (-not ($null -eq $ServiceAccount))
-    {
-        $Arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
-        if (-not ($ServiceAccount.UserName -in $BuiltInAccounts))
+        if (-not [string]::IsNullOrEmpty($ServiceName))
         {
-            $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+            $finalServiceName = $ServiceName.Replace(" ", "_")
+            $Arguments += "--servicename `"$finalServiceName`""
+        }
+
+        if (-not [string]::IsNullOrEmpty($Prefix))
+        {
+            $Arguments += "--prefix `"$Prefix`""
+        }
+
+        if (-not [string]::IsNullOrEmpty($DataDir))
+        {
+            $Arguments += "--datadir `"$DataDir`""
+        }
+
+        if (-not [string]::IsNullOrEmpty($Port))
+        {
+            $Arguments += "--serverport $Port"
+        }
+
+        if (-not [string]::IsNullOrEmpty($Features))
+        {
+            $Arguments += "--enable-components `"$Features`""
+        }
+
+        if (-not [string]::IsNullOrEmpty($OptionFile))
+        {
+            $Arguments += "--optionfile `"$OptionFile`""
+        }
+
+        $builtinAccounts = @('NT AUTHORITY\NetworkService', 'NT AUTHORITY\System', 'NT AUTHORITY\Local Service')
+        if (-not ($null -eq $ServiceAccount))
+        {
+            $Arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
+            if (-not ($ServiceAccount.UserName -in $builtinAccounts))
+            {
+                $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+            }
+        }
+
+        if (-not ($null -eq $SuperAccount))
+        {
+            $Arguments += "--superaccount `"$($SuperAccount.UserName)`""
+            $Arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
+        }
+
+        $process = Start-Process $InstallerPath -ArgumentList ($Arguments -join " ") -Wait -PassThru -NoNewWindow
+        $exitCode = $process.ExitCode
+
+        if ($exitCode -ne 0 -or $exitCode -ne 1641 -or $exitCode -ne 3010)
+        {
+            throw "PostgreSQL install failed with exit code $exitCode"
+        }
+        else
+        {
+            Write-Verbose -Message "PostgreSQL installed successfully with exit code: $exitCode"
         }
     }
-
-    if (-not ($null -eq $SuperAccount))
+    else
     {
-        $Arguments += "--superaccount `"$($SuperAccount.UserName)`""
-        $Arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
-    }
+        $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+        $uninstallString = $uninstallRegistry.GetValue('UninstallString')
 
-    Start-Process $InstallerPath -ArgumentList ($Arguments.join(" ")) -Wait
+        $process = Start-Process -FilePath $uninstallString -ArgumentList '--mode unattended' -Wait
+        $exitCode = $process.ExitCode
+
+        if ($exitCode -ne 0)
+        {
+            throw "PostgreSQL install failed with exit code $exitCode"
+        }
+        else
+        {
+            Write-Verbose -Message "PostgreSQL installed successfully with exit code: $exitCode"
+        }
+    }
 }
 
 <#
@@ -184,24 +284,61 @@ function Test-TargetResource
     param
     (
         [Parameter(Mandatory = $true)]
-        [System.String]
-        $Path,
-
-        [Parameter(Mandatory = $true)]
-        [System.Boolean]
-        $ReadOnly,
-
-        [Parameter()]
-        [System.Boolean]
-        $Hidden,
-
-        [Parameter()]
         [ValidateSet('Present', 'Absent')]
         [System.String]
-        $Ensure = 'Present'
+        $Ensure,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('9', '10', '11', '12', '13')]
+        [System.String]
+        $Version,
+
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $InstallerPath,
+
+        [Parameter()]
+        [System.String]
+        $ServiceName,
+
+        [Parameter()]
+        [System.String]
+        $Prefix,
+
+        [Parameter()]
+        [System.UInt16]
+        $Port,
+
+        [Parameter()]
+        [System.String]
+        $DataDir,
+
+        [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $ServiceAccount,
+
+        [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $SuperAccount,
+
+        [Parameter()]
+        [System.String]
+        $Features,
+
+        [Parameter()]
+        [System.String]
+        $OptionFile
     )
 
     # Check for the correct registry key in Uninstall?
-    # Placeholder to test Set-Target
-    return $false
+    $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+    if ($null -eq $uninstallRegistry)
+    {
+        return $false
+    }
+    $Version = $uninstallRegistry.GetValue('DisplayVersion')
+    if ($Version -in @('9', '10', '11', '12', '13'))
+    {
+        return $true
+    }
 }
