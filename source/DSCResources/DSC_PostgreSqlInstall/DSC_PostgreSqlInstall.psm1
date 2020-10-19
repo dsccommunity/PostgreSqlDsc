@@ -39,24 +39,43 @@ function Get-TargetResource
         [System.Boolean]
         $ReadOnly
     )
+
+    # Placeholder to test Set-Target
+    return @{
+        ServiceName     = 'Postgres'
+        InstallerPath   = 'C:\folder\file.exe'
+        Prefix          = 'C:\Program Files\Postgres'
+        Port            = 5432
+        DataDir         = 'C:\Program Files\Postgres\Data'
+        ServiceAccount  = 'NT AUTHORITY\NetworkSystem'
+        Features        = 'server,pgAdmin,stackbuilder,commandlinetools'
+    }
 }
 
 <#
     .SYNOPSIS
         Creates or removes the folder.
 
-    .PARAMETER Path
-        The path to the folder to retrieve.
+    .PARAMETER ServiceName
+        The name of the windows service that postgres will run under.
 
-    .PARAMETER ReadOnly
-       If the files in the folder should be read only.
-       Not used in Get-TargetResource.
+    .PARAMETER InstallerPath
+       The full path to the EDB Postgres installer.
 
-    .PARAMETER Hidden
-        If the folder attribut should be hidden. Default value is $false.
+    .PARAMETER Prefix
+        The folder path that Postgre should be installed to.
 
-    .PARAMETER Ensure
-        Specifies the desired state of the folder. When set to 'Present', the folder will be created. When set to 'Absent', the folder will be removed. Default value is 'Present'.
+    .PARAMETER Port
+        The port that Postgres will listen on for incoming connections.
+
+    .PARAMETER DataDir
+        The path for all the data from this Postgres install.
+
+    .PARAMETER ServiceAccount
+        The account that will be used to run the service.
+
+    .PARAMETER Features
+        The Postgres features to install.
 #>
 function Set-TargetResource
 {
@@ -73,28 +92,36 @@ function Set-TargetResource
 
         [Parameter()]
         [System.String]
-        $Prefix = "C:\Program Files\$ServiceName",
+        $Prefix,
 
         [Parameter()]
         [System.UInt16]
-        $Port = 5432,
+        $Port,
 
         [Parameter()]
         [System.String]
-        $DataDir = "$Prefix\Data",
+        $DataDir,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
-        $ServiceAccount = (New-Object -TypeName PSCredential -ArgumentList ("NT AUTHORITY\NetworkService", (New-Object System.Security.SecureString))),
+        $ServiceAccount,
 
         [Parameter()]
         [System.String]
-        $Features = 'server,pgAdmin,stackbuilder,commandlinetools'
+        $Features
     )
 
-    $BuiltInAccounts = @('NT AUTHORITY\NetworkService')
+
 
     $ServiceName = $ServiceName.Replace(" ", "_")
+    if ($null -eq $Prefix) { $Prefix = "C:\Program Files\$ServiceName" }
+    if ($null -eq $Port) { $Port = 5432 }
+    if ($null -eq $DataDir) { $DataDir = "$Prefix\Data" }
+    if ($null -eq $Features) { $Features = 'server,pgAdmin,stackbuilder,commandlinetools' }
+    if ($null -eq $ServiceAccount)
+    {
+        $ServiceAccount = (New-Object -TypeName PSCredential -ArgumentList ("NT AUTHORITY\NetworkService", (New-Object System.Security.SecureString)))
+    }
 
     $Arguments = @(
         "--prefix `"$Prefix`""
@@ -105,6 +132,8 @@ function Set-TargetResource
         "--enable-components $Features"
         "--unattendedmodeui none --node unattended"
     )
+
+    $BuiltInAccounts = @('NT AUTHORITY\NetworkService')
     if (-not ($ServiceAccount.UserName -in $BuiltInAccounts))
     {
         $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
@@ -153,4 +182,8 @@ function Test-TargetResource
         [System.String]
         $Ensure = 'Present'
     )
+
+    # Check for the correct registry key in Uninstall?
+    # Placeholder to test Set-Target
+    return $false
 }
