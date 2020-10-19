@@ -107,34 +107,54 @@ function Set-TargetResource
         $ServiceAccount,
 
         [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $SuperAccount,
+
+        [Parameter()]
         [System.String]
         $Features
     )
 
     $ServiceName = $ServiceName.Replace(" ", "_")
-    if ($null -eq $Prefix) { $Prefix = "C:\Program Files\$ServiceName" }
-    if ($null -eq $Port) { $Port = 5432 }
-    if ($null -eq $DataDir) { $DataDir = "$Prefix\Data" }
-    if ($null -eq $Features) { $Features = 'server,pgAdmin,stackbuilder,commandlinetools' }
-    if ($null -eq $ServiceAccount)
-    {
-        $ServiceAccount = (New-Object -TypeName PSCredential -ArgumentList ("NT AUTHORITY\NetworkService", (New-Object System.Security.SecureString)))
-    }
-
     $Arguments = @(
-        "--prefix `"$Prefix`""
-        "--datadir `"$DataDir`""
         "--servicename $ServiceName"
-        "--serviceaccount `"$($ServiceAccount.UserName)`""
-        "--serverport $Port"
-        "--enable-components $Features"
         "--unattendedmodeui none --node unattended"
     )
 
-    $BuiltInAccounts = @('NT AUTHORITY\NetworkService')
-    if (-not ($ServiceAccount.UserName -in $BuiltInAccounts))
+    if (-not [string]::IsNullOrEmpty($Prefix))
     {
-        $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+        $Arguments += "--prefix `"$Prefix`""
+    }
+
+    if (-not [string]::IsNullOrEmpty($DataDir))
+    {
+        $Arguments += "--datadir `"$DataDir`""
+    }
+
+    if (-not [string]::IsNullOrEmpty($Port))
+    {
+        $Arguments += "--serverport $Port"
+    }
+
+    if (-not [string]::IsNullOrEmpty($Features))
+    {
+        $Arguments += "--enable-components `"$Features`""
+    }
+
+    $BuiltInAccounts = @('NT AUTHORITY\NetworkService', 'NT AUTHORITY\System', 'NT AUTHORITY\Local Service')
+    if (-not ($null -eq $ServiceAccount))
+    {
+        $Arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
+        if (-not ($ServiceAccount.UserName -in $BuiltInAccounts))
+        {
+            $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+        }
+    }
+
+    if (-not ($null -eq $SuperAccount))
+    {
+        $Arguments += "--superaccount `"$($SuperAccount.UserName)`""
+        $Arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
     }
 
     Start-Process $InstallerPath -ArgumentList ($Arguments.join(" ")) -Wait
