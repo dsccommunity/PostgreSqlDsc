@@ -82,18 +82,21 @@ function Get-TargetResource
     if ($null -eq $uninstallRegistry)
     {
         return @{
-
+            Ensure          = "Absent"
+            InstallerPath   = $null
+            Version         = $null
         }
-    } $uninstallRegistry.GetValue('UninstallString')
+    }
+
+
     # Placeholder to test Set-Target
     return @{
-        ServiceName     = 'Postgres'
-        InstallerPath   = 'C:\folder\file.exe'
-        Prefix          = 'C:\Program Files\Postgres'
-        Port            = 5432
-        DataDir         = 'C:\Program Files\Postgres\Data'
-        ServiceAccount  = 'NT AUTHORITY\NetworkSystem'
-        Features        = 'server,pgAdmin,stackbuilder,commandlinetools'
+        Ensure          = 'Present'
+        Version         = $uninstallRegistry.GetValue('DisplayVersion')
+        InstallerPath   = $uninstallRegistry.GetValue('UninstallString')
+        ServiceName     = $uninstallRegistry.GetValue('DisplayName')
+        Prefix          = $uninstallRegistry.GetValue('InstallLocation')
+        ServiceAccount  = (Get-WmiObject win32_service | where {$_.DisplayName -match 'WLAN'} | Select-Object -ExpandProperty StartName)
     }
 }
 
