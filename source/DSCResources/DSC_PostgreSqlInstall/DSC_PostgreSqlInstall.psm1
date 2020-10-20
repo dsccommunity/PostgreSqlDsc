@@ -213,7 +213,7 @@ function Set-TargetResource
         $SuperAccount,
 
         [Parameter()]
-        [System.String]
+        [System.String[]]
         $Features,
 
         [Parameter()]
@@ -379,16 +379,8 @@ function Test-TargetResource
         $ServiceAccount,
 
         [Parameter()]
-        [System.Management.Automation.PSCredential]
-        $SuperAccount,
-
-        [Parameter()]
-        [System.String]
-        $Features,
-
-        [Parameter()]
-        [System.String]
-        $OptionFile
+        [System.String[]]
+        $Features
     )
 
     $getTargetResourceParameters = @{
@@ -398,18 +390,58 @@ function Test-TargetResource
     }
 
     $getTargetResourceResults = Get-TargetResource @getTargetResourceParameters
+    $result = $true
 
-    Write-Verbose "Searching for Postgres registry keys to determine install status."
-    $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
-    if ($null -eq $uninstallRegistry)
+    if ($Ensure -eq 'Present')
     {
-        Write-Verbose "Postgres version $Version not installed."
-        return $false
+        if ($getTargetResourceResults.Ensure -eq 'Absent')
+        {
+            $result = $false
+        }
+
+        if ($getTargetResourceResults.Version -ne $Version)
+        {
+            $result = $false
+        }
+
+        if ($getTargetResourceResults.ServiceName -ne $ServiceName)
+        {
+            $result = $false
+        }
+        if ($getTargetResourceResults.Prefix -ne $Prefix)
+        {
+            $result = $false
+        }
+        if ($getTargetResourceResults.Port -ne $Port)
+        {
+            $result = $false
+        }
+        if ($getTargetResourceResults.DataDir -ne $DataDir)
+        {
+            $result = $false
+        }
+        if ($getTargetResourceResults.ServiceAccount -ne $ServiceAccount.UserName)
+        {
+            $result = $false
+        }
+        if ($null -ne $getTargetResourceResults.Features)
+        {
+            foreach ($feature in $Features)
+            {
+                if ($getTargetResourceResults.Features -notcontains $feature)
+                {
+                    $result = $false
+                }
+            }
+        }
     }
-    $Version = $uninstallRegistry.GetValue('DisplayVersion')
-    if ($Version -in @('9', '10', '11', '12', '13'))
+    else
     {
-        Write-Verbose "Postgres version $Version is installed."
-        return $true
+        if ($getTargetResourceResults.Ensure -eq 'Present')
+        {
+            $result = $false
+        }
     }
+
+    return $result
 }

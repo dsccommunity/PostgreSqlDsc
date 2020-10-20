@@ -10,6 +10,6 @@ class DSC_PostgreSqlInstall : OMI_BaseResource
     [Write, Description("Specifies the data directory inside the prefix (Prefix\DataDir).")] String DataDirectory;
     [Write, EmbeddedInstance("MSFT_Credential"), Description("Specifies the account used to run the service.")] String ServiceAccount;
     [Write, EmbeddedInstance("MSFT_Credential"), Description("Specifies the super admin for the install.")] String SuperAccount;
-    [Write, Description("Specifies the components to be installed.")] String Features;
+    [Write, Description("Specifies the components to be installed.")] String Features[];
     [Write, Description("Specifies the option file used for the install.")] String OptionFile;
 };
