@@ -5,9 +5,9 @@ class DSC_PostgreSqlInstall : OMI_BaseResource
     [Required,ValueMap{"9", "10", "11", "12", "13"},Values{"9", "10", "11", "12", "13"}] String Version;
     [Required, Description("Specifies the path of the installer.")] String InstallerPath;
     [Write, Description("Specifies the name of the Postgres service.")] String ServiceName;
-    [Write, Description("Specifies the prefix for the install.")] String Prefix;
-    [Write, Description("Specifies the port of the service.")] UInt16 Port;
-    [Write, Description("Specifies the data directory inside the prefix (Prefix\DataDir).")] String DataDirectory;
+    [Write, Description("Specifies the install directory for the install.")] String InstallDirectory;
+    [Write, Description("Specifies the port of the service.")] UInt16 ServerPort;
+    [Write, Description("Specifies the data directory.")] String DataDirectory;
     [Write, EmbeddedInstance("MSFT_Credential"), Description("Specifies the account used to run the service.")] String ServiceAccount;
     [Write, EmbeddedInstance("MSFT_Credential"), Description("Specifies the super admin for the install.")] String SuperAccount;
     [Write, Description("Specifies the components to be installed.")] String Features[];

@@ -95,7 +95,7 @@ function Get-TargetResource
 
         # Check licenses that are in the install dir to see what features are installed
         Write-Verbose -Message ($script:localizedData.CheckingFeatures)
-        $files = Get-ChildItem 'C:\Program Files\PostgreSQL\12' -Name '*license*'
+        $files = Get-ChildItem $prefixRegistry -Name '*license*'
 
         $installedFeatures = @()
         if($files -match 'commandlinetools')
@@ -117,15 +117,15 @@ function Get-TargetResource
 
         Write-Verbose -Message ($script:localizedData.FoundKeysForVersion -f $Version)
         $getResults = @{
-            Ensure          = 'Present'
-            Version         = $registryKeys.GetValue('DisplayVersion')
-            InstallerPath   = $InstallerPath
-            Prefix          = $prefixRegistry
-            ServiceName     = $serviceDisplayName
-            ServiceAccount  = $serviceLogon
-            DataDir         = $serviceDataDir
-            Port            = $confPort
-            Features        = $installedFeatures -join ','
+            Ensure           = 'Present'
+            Version          = $registryKeys.GetValue('DisplayVersion')
+            InstallerPath    = $InstallerPath
+            InstallDirectory = $prefixRegistry
+            ServiceName      = $serviceDisplayName
+            ServiceAccount   = $serviceLogon
+            DataDirectory    = $serviceDataDir
+            ServerPort       = $confPort
+            Features         = $installedFeatures -join ','
         }
     }
 
@@ -148,13 +148,13 @@ function Get-TargetResource
     .PARAMETER ServiceName
         The name of the windows service that postgres will run under.
 
-    .PARAMETER Prefix
+    .PARAMETER InstallationDirectory
         The folder path that Postgre should be installed to.
 
-    .PARAMETER Port
+    .PARAMETER ServerPort
         The port that Postgres will listen on for incoming connections.
 
-    .PARAMETER DataDir
+    .PARAMETER DataDirectory
         The path for all the data from this Postgres install.
 
     .PARAMETER ServiceAccount
@@ -194,15 +194,15 @@ function Set-TargetResource
 
         [Parameter()]
         [System.String]
-        $Prefix,
+        $InstallDirectory,
 
         [Parameter()]
         [System.UInt16]
-        $Port,
+        $ServerPort,
 
         [Parameter()]
         [System.String]
-        $DataDir,
+        $DataDirectory,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -223,13 +223,21 @@ function Set-TargetResource
 
     if ($Ensure -eq 'Present')
     {
+        try
+        {
+            Test-Path -Path $InstallerPath -ErrorAction Stop
+        }
+        catch
+        {
+            throw ($script:localizedData.PathIsMissing -f $InstallerPath)
+        }
 
         $arguments = @(
             "--unattendedmodeui none"
             "--mode unattended"
         )
 
-        $argumentParameters = @('servicename', 'prefix', 'datair', 'port', 'features', 'optionfile')
+        $argumentParameters = @('servicename', 'InstallDirectory', 'DataDirectory', 'serverport', 'features', 'optionfile')
 
         foreach ($arg in $argumentParameters)
         {
@@ -240,6 +248,23 @@ function Set-TargetResource
                     $finalServiceName = $ServiceName.Replace(" ", "_")
                     $arguments += "--servicename `"$finalServiceName`""
                     Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $finalServiceName)
+                }
+                elseif ($arg -eq 'features')
+                {
+                    $featuresToString = ($PSBoundParameters[$arg] -join ',').ToLower()
+                    $finalFeatureString = $featuresToString.Replace('pgadmin', 'pgAdmin')
+                    $arguments += "--enable-components `"$finalFeatureString`""
+                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'enable-components', $finalFeatureString)
+                }
+                elseif ($arg -eq 'DataDirectory')
+                {
+                    $arguments += "--datadir `"$($PSBoundParameters[$arg])`""
+                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'datadir', $($PSBoundParameters[$arg]))
+                }
+                elseif ($arg -eq 'InstallDirectory')
+                {
+                    $arguments += "--prefix `"$($PSBoundParameters[$arg])`""
+                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'prefix', $($PSBoundParameters[$arg]))
                 }
                 else
                 {
@@ -269,34 +294,48 @@ function Set-TargetResource
             $arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
         }
 
+        $displayArguments = $arguments.Clone()
+        $i = 0
+        foreach ($arg in $displayArguments)
+        {
+            if ($arg -match '--superpassword' -or $arg -match '--servicepassword')
+            {
+                $displayArguments[$i] = $arg.Split(' ')[0] + ' *******'
+            }
+            $i++
+        }
         Write-Verbose -Message ($script:localizedData.StartingInstall)
-        $process = Start-Process $InstallerPath -ArgumentList ($Arguments -join " ") -Wait -PassThru -NoNewWindow
+        Write-Verbose -Message ($script:localizedData.InstallString -f $InstallerPath, $($displayArguments -join " "))
+        $process = Start-Process $InstallerPath -ArgumentList ($arguments -join " ") -Wait -PassThru -NoNewWindow
         $exitCode = $process.ExitCode
 
-        if ($exitCode -ne 0 -or $exitCode -ne 1641 -or $exitCode -ne 3010)
+        if ($exitCode -eq 0 -or $exitCode -eq 1641 -or $exitCode -eq 3010)
         {
-            throw ($script:localizedData.PostgreSqlFailed -f "install", $exitCode)
+            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "installed", $exitCode)
         }
         else
         {
-            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "installed", $exitCode)
+            throw ($script:localizedData.PostgreSqlFailed -f "install", $exitCode)
         }
     }
     else
     {
+        Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
         $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
         $uninstallString = $uninstallRegistry.GetValue('UninstallString')
 
+        Write-Verbose -Message ($script:localizedData.PosgreSqlUninstall)
+        Write-Verbose -Message ($script:localizedData.UninstallString -f $uninstallString, '--mode unattended')
         $process = Start-Process -FilePath $uninstallString -ArgumentList '--mode unattended' -Wait
         $exitCode = $process.ExitCode
 
-        if ($exitCode -ne 0)
+        if ($exitCode -eq 0 -or $null -eq $exitCode)
         {
-            throw  ($script:localizedData.PostgreSqlFailed -f "uninstall", $exitCode)
+            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "uninstalled", $exitCode)
         }
         else
         {
-            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "uninstalled", $exitCode)
+            throw  ($script:localizedData.PostgreSqlFailed -f "uninstall", $exitCode)
         }
     }
 }
@@ -317,13 +356,13 @@ function Set-TargetResource
     .PARAMETER ServiceName
         The name of the windows service that postgres will run under.
 
-    .PARAMETER Prefix
+    .PARAMETER InstallDirectory
         The folder path that Postgre should be installed to.
 
-    .PARAMETER Port
-        The port that Postgres will listen on for incoming connections.
+    .PARAMETER ServerPort
+        The server port that Postgres will listen on for incoming connections.
 
-    .PARAMETER DataDir
+    .PARAMETER DataDirectory
         The path for all the data from this Postgres install.
 
     .PARAMETER ServiceAccount
@@ -364,23 +403,31 @@ function Test-TargetResource
 
         [Parameter()]
         [System.String]
-        $Prefix,
+        $InstallDirectory,
 
         [Parameter()]
         [System.UInt16]
-        $Port,
+        $ServerPort,
 
         [Parameter()]
         [System.String]
-        $DataDir,
+        $DataDirectory,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
         $ServiceAccount,
 
         [Parameter()]
+        [System.Management.Automation.PSCredential]
+        $SuperAccount,
+
+        [Parameter()]
         [System.String[]]
-        $Features
+        $Features,
+
+        [Parameter()]
+        [System.String]
+        $OptionFile
     )
 
     $getTargetResourceParameters = @{
@@ -399,37 +446,52 @@ function Test-TargetResource
             Write-Verbose -Message ($script:localizedData.MismatchSetting -f 'Ensure', $Ensure, $getTargetResourceResults.Ensure, 'false')
             $result = $false
         }
-        if ($getTargetResourceResults.Version -ne $Version)
+        else
         {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "Version", $Version, $getTargetResourceResults.Version)
-        }
-        if ($getTargetResourceResults.ServiceName -ne $ServiceName)
-        {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceName", $ServiceName, $getTargetResourceResults.ServiceName)
-        }
-        if ($getTargetResourceResults.Prefix -ne $Prefix)
-        {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "Prefix", $Prefix, $getTargetResourceResults.Prefix)
-        }
-        if ($getTargetResourceResults.Port -ne $Port)
-        {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "Port", $Port, $getTargetResourceResults.Port)
-        }
-        if ($getTargetResourceResults.DataDir -ne $DataDir)
-        {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "DataDir", $DataDir, $getTargetResourceResults.DataDir)
-        }
-        if ($getTargetResourceResults.ServiceAccount -ne $ServiceAccount.UserName)
-        {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceAccount", $ServiceAccount.UserName, $getTargetResourceResults.ServiceAccount)
-        }
-        if ($null -ne $getTargetResourceResults.Features)
-        {
-            foreach ($feature in $Features)
+            if ($getTargetResourceResults.Version -ne $Version)
             {
-                if ($getTargetResourceResults.Features -notcontains $feature)
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f "Version", $Version, $getTargetResourceResults.Version)
+            }
+            if ($getTargetResourceResults.ServiceName -ne $ServiceName -and $null -ne $ServiceName)
+            {
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceName", $ServiceName, $getTargetResourceResults.ServiceName)
+            }
+            if ($getTargetResourceResults.InstallDirectory -ne $InstallDirectory -and $null -ne $InstallDirectory)
+            {
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f "InstallDirectory", $InstallDirectory, $getTargetResourceResults.InstallDirectory)
+            }
+            if ($getTargetResourceResults.ServerPort -ne $ServerPort -and $null -ne $ServerPort)
+            {
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServerPort", $ServerPort, $getTargetResourceResults.ServerPort)
+            }
+            if ($getTargetResourceResults.DataDirectory -ne $DataDirectory -and $null -ne $DataDirectory)
+            {
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "DataDirectory", $DataDirectory, $getTargetResourceResults.DataDirectory)
+            }
+            if ($getTargetResourceResults.ServiceAccount -ne $ServiceAccount.UserName -and $null -ne $ServiceAccount)
+            {
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceAccount", $ServiceAccount.UserName, $getTargetResourceResults.ServiceAccount)
+            }
+            if ($null -ne $getTargetResourceResults.Features)
+            {
+                $featureArray = $getTargetResourceResults.Features -Split ','
+                foreach ($feature in $Features)
                 {
-                    $result = $false
+                    if ($featureArray -notcontains $feature)
+                    {
+                        Write-Warning -Message ($script:localizedData.MissingFeature -f $feature)
+                    }
+                }
+
+                if ($featureArray.count -ne $Features.Count)
+                {
+                    foreach ($feature in $featureArray)
+                    {
+                        if ($Features -notcontains $feature)
+                        {
+                            Write-Warning -Message ($script:localizedData.ExtraFeature -f $feature)
+                        }
+                    }
                 }
             }
         }
@@ -445,3 +507,5 @@ function Test-TargetResource
 
     return $result
 }
+
+Export-ModuleMember -Function *-TargetResource
