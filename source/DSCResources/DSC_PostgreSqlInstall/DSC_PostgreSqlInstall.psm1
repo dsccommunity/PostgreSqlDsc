@@ -396,33 +396,32 @@ function Test-TargetResource
     {
         if ($getTargetResourceResults.Ensure -eq 'Absent')
         {
+            Write-Verbose -Message ($script:localizedData.MismatchSetting -f 'Ensure', $Ensure, $getTargetResourceResults.Ensure, 'false')
             $result = $false
         }
-
         if ($getTargetResourceResults.Version -ne $Version)
         {
-            $result = $false
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "Version", $Version, $getTargetResourceResults.Version)
         }
-
         if ($getTargetResourceResults.ServiceName -ne $ServiceName)
         {
-            $result = $false
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceName", $ServiceName, $getTargetResourceResults.ServiceName)
         }
         if ($getTargetResourceResults.Prefix -ne $Prefix)
         {
-            $result = $false
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "Prefix", $Prefix, $getTargetResourceResults.Prefix)
         }
         if ($getTargetResourceResults.Port -ne $Port)
         {
-            $result = $false
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "Port", $Port, $getTargetResourceResults.Port)
         }
         if ($getTargetResourceResults.DataDir -ne $DataDir)
         {
-            $result = $false
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "DataDir", $DataDir, $getTargetResourceResults.DataDir)
         }
         if ($getTargetResourceResults.ServiceAccount -ne $ServiceAccount.UserName)
         {
-            $result = $false
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceAccount", $ServiceAccount.UserName, $getTargetResourceResults.ServiceAccount)
         }
         if ($null -ne $getTargetResourceResults.Features)
         {
@@ -439,6 +438,7 @@ function Test-TargetResource
     {
         if ($getTargetResourceResults.Ensure -eq 'Present')
         {
+            Write-Verbose -Message ($script:localizedData.MismatchSetting -f 'Ensure', $Ensure, $getTargetResourceResults.Ensure, 'false')
             $result = $false
         }
     }

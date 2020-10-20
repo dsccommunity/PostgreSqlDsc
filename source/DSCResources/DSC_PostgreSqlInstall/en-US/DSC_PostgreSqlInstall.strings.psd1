@@ -15,4 +15,6 @@ ConvertFrom-StringData @'
     PostgreSqlSuccess = PostgreSql {0} successfully with exit code: {1}.
     ParameterSetTo = Parameter {0} set to {1}.
     StartingInstall = Starting Install of PostgreSQL.
+    MismatchSetting = Current setting {0} expected: {1}. Currently set to: {2}. Returning {3}.
+    MismatchWarning = Current setting {0} expected: {1}. Currently set to: {2}. Reinstall to change setting.
 '@
