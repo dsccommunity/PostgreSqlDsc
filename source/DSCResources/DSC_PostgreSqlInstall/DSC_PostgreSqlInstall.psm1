@@ -12,12 +12,38 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
     .SYNOPSIS
         Returns the current state of the folder.
 
-    .PARAMETER Path
-        The path to the folder to retrieve.
+    .PARAMETER Ensure
+        Specify if PostgreSQL should be absent or present
 
-    .PARAMETER ReadOnly
-       If the files in the folder should be read only.
-       Not used in Get-TargetResource.
+    .PARAMETER Version
+        The version of PostgreSQL that is going to be install or uninstalled.
+
+    .PARAMETER InstallerPath
+       The full path to the EDB Postgres installer.
+
+    .PARAMETER ServiceName
+        The name of the windows service that postgres will run under.
+
+    .PARAMETER Prefix
+        The folder path that Postgre should be installed to.
+
+    .PARAMETER Port
+        The port that Postgres will listen on for incoming connections.
+
+    .PARAMETER DataDir
+        The path for all the data from this Postgres install.
+
+    .PARAMETER ServiceAccount
+        The account that will be used to run the service.
+
+    .PARAMETER SuperAccount
+        The account that will be the super account in PostgreSQL.
+
+    .PARAMETER Features
+        The Postgres features to install.
+
+    .PARAMETER OptionFile
+        The file that has options for the install.
 
     .NOTES
         The ReadOnly parameter was made mandatory in this example to show
@@ -270,18 +296,38 @@ function Set-TargetResource
     .SYNOPSIS
         Creates or removes the folder.
 
-    .PARAMETER Path
-        The path to the folder to retrieve.
-
-    .PARAMETER ReadOnly
-       If the files in the folder should be read only.
-       Not used in Get-TargetResource.
-
-    .PARAMETER Hidden
-        If the folder attribut should be hidden. Default value is $false.
-
     .PARAMETER Ensure
-        Specifies the desired state of the folder. When set to 'Present', the folder will be created. When set to 'Absent', the folder will be removed. Default value is 'Present'.
+        Specify if PostgreSQL should be absent or present
+
+    .PARAMETER Version
+        The version of PostgreSQL that is going to be install or uninstalled.
+
+    .PARAMETER InstallerPath
+       The full path to the EDB Postgres installer.
+
+    .PARAMETER ServiceName
+        The name of the windows service that postgres will run under.
+
+    .PARAMETER Prefix
+        The folder path that Postgre should be installed to.
+
+    .PARAMETER Port
+        The port that Postgres will listen on for incoming connections.
+
+    .PARAMETER DataDir
+        The path for all the data from this Postgres install.
+
+    .PARAMETER ServiceAccount
+        The account that will be used to run the service.
+
+    .PARAMETER SuperAccount
+        The account that will be the super account in PostgreSQL.
+
+    .PARAMETER Features
+        The Postgres features to install.
+
+    .PARAMETER OptionFile
+        The file that has options for the install.
 #>
 function Test-TargetResource
 {
