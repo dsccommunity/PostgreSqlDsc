@@ -5,29 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Added structure for first class based resource.
-
 ### Added
 
-- For new features.
-
-### Changed
-
-- For changes in existing functionality.
-
-### Deprecated
-
-- For soon-to-be removed features.
-
-### Removed
-
-- For now removed features.
-
-### Fixed
-
-- For any bug fix.
-
-### Security
-
-- In case of vulnerabilities.
-
+- PostgreSqlInstall
+  - Install Postgres with specified features
