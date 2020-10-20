@@ -104,9 +104,11 @@ function Get-TargetResource
         $OptionFile
     )
 
+    Write-Verbose "Searching registry for Postgres keys for version $Version"
     $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
     if ($null -eq $uninstallRegistry)
     {
+        Write-Verbose "No keys found for version specified."
         return @{
             Ensure          = "Absent"
             InstallerPath   = $null
@@ -115,15 +117,46 @@ function Get-TargetResource
     }
 
 
-    # Placeholder to test Set-Target
-    return @{
+    Write-Verbose "Found keys for version $Version"
+    $GetResults = @{
         Ensure          = 'Present'
         Version         = $uninstallRegistry.GetValue('DisplayVersion')
         InstallerPath   = $uninstallRegistry.GetValue('UninstallString')
-        ServiceName     = $uninstallRegistry.GetValue('DisplayName')
         Prefix          = $uninstallRegistry.GetValue('InstallLocation')
-        ServiceAccount  = (Get-WmiObject win32_service | where {$_.DisplayName -match 'WLAN'} | Select-Object -ExpandProperty StartName)
     }
+
+    # Find the service and verify it matches provided parameters
+    $Service = Get-WmiObject win32_service | Where-Object {$_.Name -match $ServiceName}
+    if ($null -eq $Service)
+    {
+        Write-Warning "No service with the specified name $ServiceName could be found, but Postgres is installed"
+    }
+    else
+    {
+        if ($Service.Name -eq $ServiceName)
+        {
+            Write-Verbose "Service found with specified name $ServiceName."
+            $GetResults.ServiceName = $ServiceName
+        }
+        else
+        {
+            Write-Warning "Service with the specified name $ServiceName could not be found."
+        }
+
+        # Using Match because WMI Service class does not return FQDN for builtin accounts
+        # while the ServiceAccount username will be FQDN
+        if ($ServiceAccount.UserName -match $Service.StartName)
+        {
+            Write-Verbose "Service is using the specified account $($ServiceAccount.UserName)"
+            $GetResults.ServiceAccount = $ServiceAccount.UserName
+        }
+        else
+        {
+            Write-Warning "Service does not use the specified account to run $($ServiceAccount.UserName)"
+        }
+    }
+
+    return $GetResults
 }
 
 <#
@@ -385,15 +418,17 @@ function Test-TargetResource
         $OptionFile
     )
 
-    # Check for the correct registry key in Uninstall?
+    Write-Verbose "Searching for Postgres registry keys to determine install status."
     $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
     if ($null -eq $uninstallRegistry)
     {
+        Write-Verbose "Postgres version $Version not installed."
         return $false
     }
     $Version = $uninstallRegistry.GetValue('DisplayVersion')
     if ($Version -in @('9', '10', '11', '12', '13'))
     {
+        Write-Verbose "Postgres version $Version is installed."
         return $true
     }
 }
