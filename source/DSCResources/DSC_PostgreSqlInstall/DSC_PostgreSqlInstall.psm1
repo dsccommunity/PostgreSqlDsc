@@ -12,12 +12,38 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
     .SYNOPSIS
         Returns the current state of the folder.
 
-    .PARAMETER Path
-        The path to the folder to retrieve.
+    .PARAMETER Ensure
+        Specify if PostgreSQL should be absent or present
 
-    .PARAMETER ReadOnly
-       If the files in the folder should be read only.
-       Not used in Get-TargetResource.
+    .PARAMETER Version
+        The version of PostgreSQL that is going to be install or uninstalled.
+
+    .PARAMETER InstallerPath
+       The full path to the EDB Postgres installer.
+
+    .PARAMETER ServiceName
+        The name of the windows service that postgres will run under.
+
+    .PARAMETER Prefix
+        The folder path that Postgre should be installed to.
+
+    .PARAMETER Port
+        The port that Postgres will listen on for incoming connections.
+
+    .PARAMETER DataDir
+        The path for all the data from this Postgres install.
+
+    .PARAMETER ServiceAccount
+        The account that will be used to run the service.
+
+    .PARAMETER SuperAccount
+        The account that will be the super account in PostgreSQL.
+
+    .PARAMETER Features
+        The Postgres features to install.
+
+    .PARAMETER OptionFile
+        The file that has options for the install.
 
     .NOTES
         The ReadOnly parameter was made mandatory in this example to show
@@ -104,11 +130,17 @@ function Get-TargetResource
     .SYNOPSIS
         Creates or removes the folder.
 
-    .PARAMETER ServiceName
-        The name of the windows service that postgres will run under.
+    .PARAMETER Ensure
+        Specify if PostgreSQL should be absent or present
+
+    .PARAMETER Version
+        The version of PostgreSQL that is going to be install or uninstalled.
 
     .PARAMETER InstallerPath
        The full path to the EDB Postgres installer.
+
+    .PARAMETER ServiceName
+        The name of the windows service that postgres will run under.
 
     .PARAMETER Prefix
         The folder path that Postgre should be installed to.
@@ -122,8 +154,14 @@ function Get-TargetResource
     .PARAMETER ServiceAccount
         The account that will be used to run the service.
 
+    .PARAMETER SuperAccount
+        The account that will be the super account in PostgreSQL.
+
     .PARAMETER Features
         The Postgres features to install.
+
+    .PARAMETER OptionFile
+        The file that has options for the install.
 #>
 function Set-TargetResource
 {
@@ -180,68 +218,62 @@ function Set-TargetResource
     if ($Ensure -eq 'Present')
     {
 
-        $Arguments = @(
+        $arguments = @(
             "--unattendedmodeui none"
             "--mode unattended"
         )
 
-        if (-not [string]::IsNullOrEmpty($ServiceName))
-        {
-            $finalServiceName = $ServiceName.Replace(" ", "_")
-            $Arguments += "--servicename `"$finalServiceName`""
-        }
+        $argumentParameters = @('servicename', 'prefix', 'datair', 'port', 'features', 'optionfile')
 
-        if (-not [string]::IsNullOrEmpty($Prefix))
+        foreach ($arg in $argumentParameters)
         {
-            $Arguments += "--prefix `"$Prefix`""
-        }
-
-        if (-not [string]::IsNullOrEmpty($DataDir))
-        {
-            $Arguments += "--datadir `"$DataDir`""
-        }
-
-        if (-not [string]::IsNullOrEmpty($Port))
-        {
-            $Arguments += "--serverport $Port"
-        }
-
-        if (-not [string]::IsNullOrEmpty($Features))
-        {
-            $Arguments += "--enable-components `"$Features`""
-        }
-
-        if (-not [string]::IsNullOrEmpty($OptionFile))
-        {
-            $Arguments += "--optionfile `"$OptionFile`""
+            if (-not [string]::IsNullOrEmpty($PSBoundParameters[$arg]))
+            {
+                if ($arg -eq 'ServiceName')
+                {
+                    $finalServiceName = $ServiceName.Replace(" ", "_")
+                    $arguments += "--servicename `"$finalServiceName`""
+                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $finalServiceName)
+                }
+                else
+                {
+                    $arguments += "--$arg `"$($PSBoundParameters[$arg])`""
+                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $($PSBoundParameters[$arg]))
+                }
+            }
         }
 
         $builtinAccounts = @('NT AUTHORITY\NetworkService', 'NT AUTHORITY\System', 'NT AUTHORITY\Local Service')
         if (-not ($null -eq $ServiceAccount))
         {
-            $Arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
+            $arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
+            Write-Verbose -Message ($script:localizedData.ParameterSetTo -f "serviceaccount", $($ServiceAccount.UserName))
+
             if (-not ($ServiceAccount.UserName -in $builtinAccounts))
             {
-                $Arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+                $arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
             }
         }
 
         if (-not ($null -eq $SuperAccount))
         {
-            $Arguments += "--superaccount `"$($SuperAccount.UserName)`""
-            $Arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
+            $arguments += "--superaccount `"$($SuperAccount.UserName)`""
+            Write-Verbose -Message ($script:localizedData.ParameterSetTo -f "SuperAccount", $($SuperAccount.UserName))
+
+            $arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
         }
 
+        Write-Verbose -Message ($script:localizedData.StartingInstall)
         $process = Start-Process $InstallerPath -ArgumentList ($Arguments -join " ") -Wait -PassThru -NoNewWindow
         $exitCode = $process.ExitCode
 
         if ($exitCode -ne 0 -or $exitCode -ne 1641 -or $exitCode -ne 3010)
         {
-            throw "PostgreSQL install failed with exit code $exitCode"
+            throw ($script:localizedData.PostgreSqlFailed -f "install", $exitCode)
         }
         else
         {
-            Write-Verbose -Message "PostgreSQL installed successfully with exit code: $exitCode"
+            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "installed", $exitCode)
         }
     }
     else
@@ -254,11 +286,11 @@ function Set-TargetResource
 
         if ($exitCode -ne 0)
         {
-            throw "PostgreSQL install failed with exit code $exitCode"
+            throw  ($script:localizedData.PostgreSqlFailed -f "uninstall", $exitCode)
         }
         else
         {
-            Write-Verbose -Message "PostgreSQL installed successfully with exit code: $exitCode"
+            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "uninstalled", $exitCode)
         }
     }
 }
@@ -267,18 +299,38 @@ function Set-TargetResource
     .SYNOPSIS
         Creates or removes the folder.
 
-    .PARAMETER Path
-        The path to the folder to retrieve.
-
-    .PARAMETER ReadOnly
-       If the files in the folder should be read only.
-       Not used in Get-TargetResource.
-
-    .PARAMETER Hidden
-        If the folder attribut should be hidden. Default value is $false.
-
     .PARAMETER Ensure
-        Specifies the desired state of the folder. When set to 'Present', the folder will be created. When set to 'Absent', the folder will be removed. Default value is 'Present'.
+        Specify if PostgreSQL should be absent or present
+
+    .PARAMETER Version
+        The version of PostgreSQL that is going to be install or uninstalled.
+
+    .PARAMETER InstallerPath
+       The full path to the EDB Postgres installer.
+
+    .PARAMETER ServiceName
+        The name of the windows service that postgres will run under.
+
+    .PARAMETER Prefix
+        The folder path that Postgre should be installed to.
+
+    .PARAMETER Port
+        The port that Postgres will listen on for incoming connections.
+
+    .PARAMETER DataDir
+        The path for all the data from this Postgres install.
+
+    .PARAMETER ServiceAccount
+        The account that will be used to run the service.
+
+    .PARAMETER SuperAccount
+        The account that will be the super account in PostgreSQL.
+
+    .PARAMETER Features
+        The Postgres features to install.
+
+    .PARAMETER OptionFile
+        The file that has options for the install.
 #>
 function Test-TargetResource
 {

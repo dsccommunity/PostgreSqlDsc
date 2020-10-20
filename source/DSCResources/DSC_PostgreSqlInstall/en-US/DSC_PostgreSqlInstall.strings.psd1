@@ -5,11 +5,8 @@
 #>
 
 ConvertFrom-StringData @'
-    RetrieveFolder = Retrieving folder information of '{0}'.
-    FolderFound = Folder was found, evaluating all properties.
-    FolderNotFound = Folder was not found.
-    CreateFolder = Creating folder '{0}'.
-    EvaluateProperties = Evaluating properties of folder '{0}'.
-    SettingProperties = Setting properties to correct values of folder '{0}'.
-    RemoveFolder = Removing folder '{0}'.
+    PostgreSqlFailed = PostgreSQL {0} failed with exit code {1}.
+    PostgreSqlSuccess = PostgreSql {0} successfully with exit code: {1}.
+    ParameterSetTo = Parameter {0} set to {1}.
+    StartingInstall = Starting Install of PostgreSQL.
 '@
