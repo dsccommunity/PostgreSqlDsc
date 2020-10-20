@@ -21,30 +21,6 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
     .PARAMETER InstallerPath
        The full path to the EDB Postgres installer.
 
-    .PARAMETER ServiceName
-        The name of the windows service that postgres will run under.
-
-    .PARAMETER Prefix
-        The folder path that Postgre should be installed to.
-
-    .PARAMETER Port
-        The port that Postgres will listen on for incoming connections.
-
-    .PARAMETER DataDir
-        The path for all the data from this Postgres install.
-
-    .PARAMETER ServiceAccount
-        The account that will be used to run the service.
-
-    .PARAMETER SuperAccount
-        The account that will be the super account in PostgreSQL.
-
-    .PARAMETER Features
-        The Postgres features to install.
-
-    .PARAMETER OptionFile
-        The file that has options for the install.
-
     .NOTES
         The ReadOnly parameter was made mandatory in this example to show
         how to handle unused mandatory parameters.
@@ -69,94 +45,91 @@ function Get-TargetResource
 
         [Parameter(Mandatory = $true)]
         [System.String]
-        $InstallerPath,
-
-        [Parameter()]
-        [System.String]
-        $ServiceName,
-
-        [Parameter()]
-        [System.String]
-        $Prefix,
-
-        [Parameter()]
-        [System.UInt16]
-        $Port,
-
-        [Parameter()]
-        [System.String]
-        $DataDir,
-
-        [Parameter()]
-        [System.Management.Automation.PSCredential]
-        $ServiceAccount,
-
-        [Parameter()]
-        [System.Management.Automation.PSCredential]
-        $SuperAccount,
-
-        [Parameter()]
-        [System.String]
-        $Features,
-
-        [Parameter()]
-        [System.String]
-        $OptionFile
+        $InstallerPath
     )
 
-    Write-Verbose "Searching registry for Postgres keys for version $Version"
-    $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
-    if ($null -eq $uninstallRegistry)
+    Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
+    $registryKeys = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+    if ($null -eq $registryKeys)
     {
-        Write-Verbose "No keys found for version specified."
-        return @{
+        Write-Verbose -Message ($script:localizedData.NoVersionFound)
+        $getResults =  @{
             Ensure          = "Absent"
-            InstallerPath   = $null
-            Version         = $null
+            InstallerPath   = $InstallerPath
+            Version         = $Version
         }
-    }
-
-
-    Write-Verbose "Found keys for version $Version"
-    $GetResults = @{
-        Ensure          = 'Present'
-        Version         = $uninstallRegistry.GetValue('DisplayVersion')
-        InstallerPath   = $uninstallRegistry.GetValue('UninstallString')
-        Prefix          = $uninstallRegistry.GetValue('InstallLocation')
-    }
-
-    # Find the service and verify it matches provided parameters
-    $Service = Get-WmiObject win32_service | Where-Object {$_.Name -match $ServiceName}
-    if ($null -eq $Service)
-    {
-        Write-Warning "No service with the specified name $ServiceName could be found, but Postgres is installed"
     }
     else
     {
-        if ($Service.Name -eq $ServiceName)
+        $prefixRegistry = $registryKeys.GetValue('InstallLocation')
+
+        # Search Services for PostgreSQL so we can get the status of the service.
+        Write-Verbose -Message ($script:localizedData.CheckingForService)
+        $services = Get-ChildItem -Path HKLM:\SYSTEM\CurrentControlSet\Services
+        foreach ($service in $services)
         {
-            Write-Verbose "Service found with specified name $ServiceName."
-            $GetResults.ServiceName = $ServiceName
+            $value = Get-ItemProperty -Path $service.PSPath -Name ImagePath -ErrorAction SilentlyContinue
+
+            if($value.ImagePath -like "*$prefixRegistry*")
+            {
+                $result = $service
+            }
         }
-        else
+        if($result)
         {
-            Write-Warning "Service with the specified name $ServiceName could not be found."
+            $serviceDisplayName = ($result.GetValue('DisplayName') -split ' - ')[0]
+            $serviceLogon = $result.GetValue('ObjectName')
+            $serviceDataDir = (($result.GetValue('ImagePath') -split ' -D')[1] -split ' -w')[0].Trim().Replace('"','')
         }
 
-        # Using Match because WMI Service class does not return FQDN for builtin accounts
-        # while the ServiceAccount username will be FQDN
-        if ($ServiceAccount.UserName -match $Service.StartName)
+        #Open config to check port
+        Write-Verbose -Message ($script:localizedData.CheckingConfig)
+        $conf = Get-Content -Path $serviceDataDir\postgresql.conf
+        foreach ($line in $conf)
         {
-            Write-Verbose "Service is using the specified account $($ServiceAccount.UserName)"
-            $GetResults.ServiceAccount = $ServiceAccount.UserName
+            if ($line -like 'port =*')
+            {
+                $confPort = $line.Substring(7,8).Trim()
+            }
         }
-        else
+
+        # Check licenses that are in the install dir to see what features are installed
+        Write-Verbose -Message ($script:localizedData.CheckingFeatures)
+        $files = Get-ChildItem 'C:\Program Files\PostgreSQL\12' -Name '*license*'
+
+        $installedFeatures = @()
+        if($files -match 'commandlinetools')
         {
-            Write-Warning "Service does not use the specified account to run $($ServiceAccount.UserName)"
+            $installedFeatures += 'commandlinetools'
+        }
+        if($files -match 'pgAdmin')
+        {
+            $installedFeatures += 'pgAdmin'
+        }
+        if($files -match 'server')
+        {
+            $installedFeatures += 'server'
+        }
+        if($files -match 'StackBuilder')
+        {
+            $installedFeatures += 'stackbuilder'
+        }
+
+        Write-Verbose -Message ($script:localizedData.FoundKeysForVersion -f $Version)
+        $getResults = @{
+            Ensure          = 'Present'
+            Version         = $registryKeys.GetValue('DisplayVersion')
+            InstallerPath   = $InstallerPath
+            Prefix          = $prefixRegistry
+            ServiceName     = $serviceDisplayName
+            ServiceAccount  = $serviceLogon
+            DataDir         = $serviceDataDir
+            Port            = $confPort
+            Features        = $installedFeatures -join ','
         }
     }
 
-    return $GetResults
+    return $getResults
 }
 
 <#
@@ -417,6 +390,14 @@ function Test-TargetResource
         [System.String]
         $OptionFile
     )
+
+    $getTargetResourceParameters = @{
+        Ensure        = $Ensure
+        Version       = $Version
+        InstallerPath = $InstallerPath
+    }
+
+    $getTargetResourceResults = Get-TargetResource @getTargetResourceParameters
 
     Write-Verbose "Searching for Postgres registry keys to determine install status."
     $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
