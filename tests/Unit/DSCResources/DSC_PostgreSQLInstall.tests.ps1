@@ -229,11 +229,42 @@ try
         Describe "$moduleResourceName\Test-TargetResource" {
             Mock -CommandName Set-Location
 
-            Context 'When running Test-TargetResource where Postgres is installed' {
-                Mock -CommandName Get-TargetResource -MockWith { $setAllParamsPresent }
+            $getAllParamsPresent = $setAllParamsPresent.Clone()
+            $getAllParamsPresent.ServiceAccount = 'NT AUTHORITY\NetworkService'
+            $getAllParamsPresent.Features = $getAllParamsPresent.Features -join ","
+            $getAllParamsPresent.Remove('SuperAccount')
 
-                It 'Should return desired result true when ensure = present' {
-                    Test-TargetResource @setAllParamsPresent | Should -Be $true
+            $getParamsMismatch = $getAllParamsPresent.Clone()
+            $getParamsMismatch.Version = '10'
+            $getParamsMismatch.ServiceName = 'Postgres_Sql_Wrong'
+            $getParamsMismatch.InstallDirectory = 'Y:\Doesnt\Exist\'
+            $getParamsMismatch.ServerPort = 1234
+            $getParamsMismatch.DataDirectory = 'Y:\Doesnt\Exist\'
+            $getParamsMismatch.ServiceAccount = 'LocalSystem'
+            $getParamsMismatch.Features = 'commandlinetools,server,pgadmin'
+
+
+            Context 'When running Test-TargetResource where Postgres is installed' {
+
+                Context 'When parameters do not match installed values' {
+                    Mock -CommandName Get-TargetResource -MockWith { $getParamsMismatch }
+                    Mock -CommandName Write-Warning
+
+                    It 'Should display warning when features are missing' {
+                        Test-TargetResource @setAllParamsPresent
+                        Assert-MockCalled Write-Warning -Exactly -Times 7 -Scope It
+                    }
+                }
+
+                Context 'When suppliment parameters do match installed values'{
+                    Mock -CommandName Get-TargetResource -MockWith { $getAllParamsPresent }
+                    It 'Should return desired result true when ensure = present' {
+                        Test-TargetResource @setAllParamsPresent | Should -Be $true
+                    }
+
+                    It 'Should return desired result false when ensure = absent' {
+                        Test-TargetResource @setParamsAbsent | Should -Be $false
+                    }
                 }
             }
 
@@ -243,7 +274,11 @@ try
                 It 'Should return desired result false when ensure = present' {
                     Test-TargetResource @setAllParamsPresent | Should -Be $false
                 }
+                It 'Should return desired result true when ensure = absent' {
+                    Test-TargetResource @setParamsAbsent | Should -Be $true
+                }
             }
+
         }
     }
 }
