@@ -10,7 +10,7 @@ Configuration Example
     {
         PostgreSqlInstall ExampleSetting
        {
-            Ensure           = 'Present'
+            Ensure           = 'Absent'
             Version          = '12'
             InstallerPath    = 'C:\postgresql-12.4-1-windows-x64.exe'
        }

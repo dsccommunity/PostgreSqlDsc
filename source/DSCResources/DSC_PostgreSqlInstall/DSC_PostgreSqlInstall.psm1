@@ -223,11 +223,7 @@ function Set-TargetResource
 
     if ($Ensure -eq 'Present')
     {
-        try
-        {
-            Test-Path -Path $InstallerPath -ErrorAction Stop
-        }
-        catch
+        if (-not (Test-Path -Path $InstallerPath))
         {
             throw ($script:localizedData.PathIsMissing -f $InstallerPath)
         }
