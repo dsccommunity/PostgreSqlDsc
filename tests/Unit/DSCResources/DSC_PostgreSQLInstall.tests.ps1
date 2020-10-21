@@ -143,37 +143,20 @@ try
 
         Describe "$moduleResourceName\Test-TargetResource" {
             Mock -CommandName Set-Location
-            Mock -CommandName Import-ConfigMgrPowerShellModule
 
-            Context 'When running Test-TargetResource where Get-CMAccounts has accounts' {
-                Mock -CommandName Get-CMAccount -MockWith { $cmAccounts }
+            Context 'When running Test-TargetResource where Postgres is installed' {
+                Mock -CommandName Get-TargetResource -MockWith { $setAllParamsPresent }
 
-                It 'Should return desired result true when ensure = present and account exists' {
-                    Test-TargetResource @cmAccountExists_Present | Should -Be $true
-                }
-
-                It 'Should return desired result true when ensure = absent and account does not exist' {
-                    Test-TargetResource @cmAccountNull_Absent | Should -Be $true
-                }
-
-                It 'Should return desired result false when ensure = present and account does not exist' {
-                    Test-TargetResource @cmAccountNull_Present | Should -Be $false
-                }
-
-                It 'Should return desired result false when ensure = absent and account does not exist' {
-                    Test-TargetResource @cmAccountExists_Absent | Should -Be $false
+                It 'Should return desired result true when ensure = present' {
+                    Test-TargetResource @setAllParamsPresent | Should -Be $true
                 }
             }
 
-            Context 'When running Test-TargetResource where Get-CMAccounts returned null' {
-                Mock -CommandName Get-CMAccount -MockWith { $null }
+            Context 'When running Test-TargetResource where Postgres is not installed' {
+                Mock -CommandName Get-TargetResource -MockWith { $setParamsAbsent }
 
                 It 'Should return desired result false when ensure = present' {
-                    Test-TargetResource @cmAccountNull_Present | Should -Be $false
-                }
-
-                It 'Should return desired result true when ensure = absent' {
-                    Test-TargetResource @cmAccountNull_Absent | Should -Be $true
+                    Test-TargetResource @setAllParamsPresent | Should -Be $false
                 }
             }
         }
