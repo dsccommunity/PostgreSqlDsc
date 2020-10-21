@@ -34,7 +34,7 @@ try
     InModuleScope $script:dscResourceName {
         $moduleResourceName = 'PostgreSqlDsc - DSC_PostgreSqlInstall'
 
-        $serviceCredeDomain = New-Object `
+        $serviceCredDomain = New-Object `
         -TypeName System.Management.Automation.PSCredential `
         -ArgumentList 'contoso\testaccount', (ConvertTo-SecureString 'DummyPassword' -AsPlainText -Force)
 
@@ -46,16 +46,35 @@ try
         -TypeName System.Management.Automation.PSCredential `
         -ArgumentList 'postgresqlAdmin', (ConvertTo-SecureString 'DummyPassword' -AsPlainText -Force)
 
+        $getParams = @{
+            Ensure           = 'Present'
+            Version          = '12'
+            InstallerPath    = 'X:\postgresql-12.4-1-windows-x64.exe'
+        }
+
         $setAllParamsPresent = @{
             Ensure           = 'Present'
             Version          = '12'
-            InstallerPath    = 'C:\postgresql-12.4-1-windows-x64.exe'
+            InstallerPath    = 'X:\postgresql-12.4-1-windows-x64.exe'
             ServiceName      = 'postgreSql_Test'
-            InstallDirectory = 'C:\PostgreSQL'
+            InstallDirectory = 'TestDrive:\PostgreSql'
             ServerPort       = '5432'
-            DataDirectory    = 'C:\PostgreSQL\Data'
+            DataDirectory    = 'TestDrive:\PostgreSql\Data\'
             Features         = 'commandlinetools','server','pgadmin','stackbuilder'
             ServiceAccount   = $serviceCredBuiltin
+            SuperAccount     = $superAccountCred
+        }
+
+        $setAllParamsPresentServicePassword = @{
+            Ensure           = 'Present'
+            Version          = '12'
+            InstallerPath    = 'X:\postgresql-12.4-1-windows-x64.exe'
+            ServiceName      = 'postgreSql_Test'
+            InstallDirectory = 'TestDrive:\PostgreSql'
+            ServerPort       = '5432'
+            DataDirectory    = 'TestDrive:\PostgreSql\Data\'
+            Features         = 'commandlinetools','server','pgadmin','stackbuilder'
+            ServiceAccount   = $serviceCredDomain
             SuperAccount     = $superAccountCred
         }
 
@@ -65,37 +84,81 @@ try
             InstallerPath    = 'C:\postgresql-12.4-1-windows-x64.exe'
         }
 
-        $mockStartProcess = @{
+        $mockStartProcessNoError = @{
             exitcode = '0'
         }
 
+        $mockStartProcessError = @{
+            exitcode = '1704'
+        }
 
         Describe "$moduleResourceName\Get-TargetResource" {
-            Mock -CommandName Import-ConfigMgrPowerShellModule
-            Mock -CommandName Set-Location
+            # Create registry to mock the uninstall location HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall
+            New-Item -Path TestRegistry:\ -Name 'PostgreSql 12'
+            New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'Name' -Value 'PostgreSql 12'
+            New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'InstallLocation' -Value 'TestDrive:\PostgreSql'
+            New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'DisplayVersion' -Value '12'
+            New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'UninstallString' -Value 'TestDrive:\PostgreSQL\uninstall-postgresql.exe'
 
-            Context 'When retrieving client settings' {
+            $mockUninstallregistry = Get-ChildItem -Path 'TestRegistry:\'
 
-                It 'Should return desired result' {
-                    Mock -CommandName Get-CMAccount -MockWith { $cmAccounts }
+            # Create registry to mock the services HKLM:\SYSTEM\CurrentControlSet\Services
+            New-Item -Path TestRegistry:\ -Name 'Services'
+            New-Item -Path TestRegistry:\Services -Name 'postgreSql'
+            New-ItemProperty -Path 'TestRegistry:\Services\postgreSql' -Name 'DisplayName' -Value 'postgreSql - PostgreSQL Server 12'
+            New-ItemProperty -Path 'TestRegistry:\Services\postgreSql' -Name 'ObjectName' -Value 'NT AUTHORITY\NetworkService'
+            New-ItemProperty -Path 'TestRegistry:\Services\postgreSql' -Name 'ImagePath' -Value '"TestDrive:\PostgreSQL\bin\pg_ctl.exe" runservice -N "postgreSql_RPS" -D "TestDrive:\PostgreSql\Data" -w'
 
-                    $result = Get-TargetResource @getCmAccounts
-                    $result                 | Should -BeOfType System.Collections.HashTable
-                    $result.SiteCode        | Should -Be -ExpectedValue 'Lab'
-                    $result.Account         | Should -Be -ExpectedValue 'TestUser1'
-                    $result.CurrentAccounts | Should -Be -ExpectedValue @('DummyUser1','DummyUser2')
-                    $result.Ensure          | Should -Be -ExpectedValue 'Present'
+            $mockServicesRegistry = Get-ChildItem -Path 'TestRegistry:\Services'
+
+            $postgreSqlConfig = 'TestDrive:\PostgreSql\Data\postgresql.conf'
+            New-Item -Path 'TestDrive:\' -Name 'PostgreSql' -Type Directory
+            New-Item -Path 'TestDrive:\PostgreSql\' -Name 'Data'-Type Directory
+            New-Item -Path 'TestDrive:\PostgreSql\Data' -Name 'postgresql.conf' -Type File
+            Set-Content $postgreSqlConfig -Value 'port = 5432                # (change requires restart)'
+
+            #build Licenses
+            Set-Content 'TestDrive:\PostgreSql\commandlinetools_3rd_party_licenses.txt' -Value 'license'
+            Set-Content 'TestDrive:\PostgreSql\pgAdmin_license.txt' -Value 'license'
+            Set-Content 'TestDrive:\PostgreSql\server_license.txt' -Value 'license'
+            Set-Content 'TestDrive:\PostgreSql\StackBuilder_3rd_party_licenses.txt' -Value 'license'
+
+
+            Context 'When getting current settings' {
+                It 'Should return desired result when present' {
+                    Mock -CommandName Get-ChildItem -MockWith { $mockUninstallregistry } -ParameterFilter {$Path -eq 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
+                    Mock -CommandName Get-ChildItem -MockWith { $mockServicesRegistry } -ParameterFilter {$Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Services'}
+
+
+
+                    $result = Get-TargetResource @getParams
+                    $result                  | Should -BeOfType System.Collections.HashTable
+                    $result.Ensure           | Should -Be -ExpectedValue 'Present'
+                    $result.Version          | Should -Be -ExpectedValue '12'
+                    $result.InstallerPath    | Should -Be -ExpectedValue $getParams.InstallerPath
+                    $result.InstallDirectory | Should -Be -ExpectedValue 'TestDrive:\PostgreSql'
+                    $result.ServiceName      | Should -Be -ExpectedValue 'postgreSql'
+                    $result.ServiceAccount   | Should -Be -ExpectedValue 'NT AUTHORITY\NetworkService'
+                    $result.DataDirectory    | Should -Be -ExpectedValue 'TestDrive:\PostgreSql\Data'
+                    $result.ServerPort       | Should -Be -ExpectedValue '5432'
+                    $result.Features         | Should -Be -ExpectedValue 'commandlinetools,pgAdmin,server,stackbuilder'
                 }
 
-                It 'Should return desired result' {
-                    Mock -CommandName Get-CMAccount -MockWith { $null }
 
-                    $result = Get-TargetResource @getCmAccounts
-                    $result                 | Should -BeOfType System.Collections.HashTable
-                    $result.SiteCode        | Should -Be -ExpectedValue 'Lab'
-                    $result.Account         | Should -Be -ExpectedValue 'TestUser1'
-                    $result.CurrentAccounts | Should -Be -ExpectedValue $null
-                    $result.Ensure          | Should -Be -ExpectedValue 'Present'
+                It 'Should return desired result when absent' {
+                    Mock -CommandName Get-ChildItem -MockWith { $null } -ParameterFilter {$Path -eq 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
+
+                    $result = Get-TargetResource @getParams
+                    $result                  | Should -BeOfType System.Collections.HashTable
+                    $result.Ensure           | Should -Be -ExpectedValue 'Absent'
+                    $result.InstallerPath    | Should -Be -ExpectedValue $getParams.InstallerPath
+                    $result.Version          | Should -Be -ExpectedValue $getParams.Version
+                    $result.InstallDirectory | Should -Be -ExpectedValue $null
+                    $result.ServiceName      | Should -Be -ExpectedValue $null
+                    $result.ServiceAccount   | Should -Be -ExpectedValue $null
+                    $result.DataDirectory    | Should -Be -ExpectedValue $null
+                    $result.ServerPort       | Should -Be -ExpectedValue $null
+                    $result.Features         | Should -Be -ExpectedValue $null
                 }
             }
         }
@@ -110,19 +173,28 @@ try
             $mockUninstallStringRegistry = Get-ChildItem -Path 'TestRegistry:\'
 
             Context 'When Set-TargetResource runs successfully' {
-                It 'Should call expected commands when installing PostgreSql' {
-                    #Mock -CommandName Test-Path -MockWith {$true}
-                    Mock -CommandName Start-Process -MockWith {$mockStartProcess}
+                It 'Should call expected commands when installing PostgreSql with builtin service account' {
+                    Mock -CommandName Test-Path -MockWith {$true}
+                    Mock -CommandName Start-Process -MockWith {$mockStartProcessNoError}
 
                     Set-TargetResource @setAllParamsPresent
                     Assert-MockCalled Test-Path -Exactly -Times 1 -Scope It
                     Assert-MockCalled Start-Process -Exactly -Times 1 -Scope It
                 }
 
+                It 'Should call expected commands when installing PostgreSql with domain service account' {
+                    Mock -CommandName Test-Path -MockWith {$true}
+                    Mock -CommandName Start-Process -MockWith {$mockStartProcessNoError}
+
+                    Set-TargetResource @setAllParamsPresentServicePassword
+                    Assert-MockCalled Test-Path -Exactly -Times 1 -Scope It
+                    Assert-MockCalled Start-Process -Exactly -Times 1 -Scope It
+                }
+
                 It 'Should call expected commands when uninstalling PostgreSql' {
                     Mock -CommandName Get-ChildItem -MockWith {$mockUninstallStringRegistry}
-                    #Mock -CommandName Test-Path -MockWith {$true}
-                    Mock -CommandName Start-Process -MockWith {$mockStartProcess}
+                    Mock -CommandName Test-Path -MockWith {$true}
+                    Mock -CommandName Start-Process -MockWith {$mockStartProcessNoError}
 
                     Set-TargetResource @setParamsAbsent
                     Assert-MockCalled Test-Path -Exactly -Times 0 -Scope It
@@ -132,9 +204,22 @@ try
             }
 
             Context 'When Set-TargetResource runs unsuccessfully' {
-                It 'Should throw with InstallerPath does not exists' {
-                    #Mock -CommandName Test-Path -MockWith {$false}
-                    Mock -CommandName Start-Process -MockWith {$mockStartProcess}
+                It 'Should throw when the InstallerPath does not exist for install' {
+                    Mock -CommandName Test-Path -MockWith {$false}
+
+                    {Set-TargetResource @setAllParamsPresent} | Should throw
+                }
+
+                It 'Should throw when the exit code is not 0 or null for uninstall' {
+                    Mock -CommandName Get-ChildItem -MockWith {$mockUninstallStringRegistry}
+                    Mock -CommandName Start-Process -MockWith {$mockStartProcessError}
+
+                    {Set-TargetResource @setParamsAbsent} | Should throw
+                }
+
+                It 'Should throw when the exit code is not 0, 1641, 3010 for install' {
+                    Mock -CommandName Test-Path -MockWith {$true}
+                    Mock -CommandName Start-Process -MockWith {$mockStartProcessError}
 
                     {Set-TargetResource @setAllParamsPresent} | Should throw
                 }

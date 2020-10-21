@@ -54,9 +54,15 @@ function Get-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.NoVersionFound)
         $getResults =  @{
-            Ensure          = "Absent"
-            InstallerPath   = $InstallerPath
-            Version         = $Version
+            Ensure           = "Absent"
+            InstallerPath    = $InstallerPath
+            Version          = $Version
+            InstallDirectory = $null
+            ServiceName      = $null
+            ServiceAccount   = $null
+            DataDirectory    = $null
+            ServerPort       = $null
+            Features         = $null
         }
     }
     else
