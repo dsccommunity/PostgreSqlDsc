@@ -2,15 +2,13 @@ $script:ParentModulePath = Split-Path -Path (Split-Path -Path $PSScriptRoot -Par
 $script:modulesFolderPath = Join-Path -Path $script:ParentModulePath -ChildPath 'Modules'
 
 $script:CommonHelperModulePath = Join-Path -Path $script:modulesFolderPath -ChildPath 'DscResource.Common'
-#$script:ResourceHelperModulePath = Join-Path -Path $script:modulesFolderPath -ChildPath 'Folder.Common'
 Import-Module $script:CommonHelperModulePath -ErrorAction Stop
-#Import-Module -Name (Join-Path -Path $script:resourceHelperModulePath -ChildPath 'Folder.Common.psm1')
 
 $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
 
 <#
     .SYNOPSIS
-        Returns the current state of the folder.
+        Returns the current state of the PostgreSql install.
 
     .PARAMETER Ensure
         Specify if PostgreSQL should be absent or present
@@ -19,13 +17,7 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
         The version of PostgreSQL that is going to be install or uninstalled.
 
     .PARAMETER InstallerPath
-       The full path to the EDB Postgres installer.
-
-    .NOTES
-        The ReadOnly parameter was made mandatory in this example to show
-        how to handle unused mandatory parameters.
-        In a real scenario this parameter would not need to have the type
-        qualifier Required in the schema.mof.
+        The full path to the EDB Postgres installer.
 #>
 function Get-TargetResource
 {
@@ -50,11 +42,13 @@ function Get-TargetResource
 
     Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
     $registryKeys = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+
     if ($null -eq $registryKeys)
     {
         Write-Verbose -Message ($script:localizedData.NoVersionFound)
+
         $getResults =  @{
-            Ensure           = "Absent"
+            Ensure           = 'Absent'
             InstallerPath    = $InstallerPath
             Version          = $Version
             InstallDirectory = $null
@@ -76,21 +70,22 @@ function Get-TargetResource
         {
             $value = Get-ItemProperty -Path $service.PSPath -Name ImagePath -ErrorAction SilentlyContinue
 
-            if($value.ImagePath -like "*$prefixRegistry*")
+            if ($value.ImagePath -like "*$prefixRegistry*")
             {
                 $result = $service
             }
         }
-        if($result)
+
+        if ($result)
         {
             $serviceDisplayName = ($result.GetValue('DisplayName') -split ' - ')[0]
             $serviceLogon = $result.GetValue('ObjectName')
             $serviceDataDir = (($result.GetValue('ImagePath') -split ' -D')[1] -split ' -w')[0].Trim().Replace('"','')
         }
 
-        #Open config to check port
+        # Open config to check port
         Write-Verbose -Message ($script:localizedData.CheckingConfig)
-        $conf = Get-Content -Path $serviceDataDir\postgresql.conf
+        $conf = Get-Content -Path "$serviceDataDir\postgresql.conf"
         foreach ($line in $conf)
         {
             if ($line -like 'port =*')
@@ -101,22 +96,22 @@ function Get-TargetResource
 
         # Check licenses that are in the install dir to see what features are installed
         Write-Verbose -Message ($script:localizedData.CheckingFeatures)
-        $files = Get-ChildItem $prefixRegistry -Name '*license*'
+        $files = Get-ChildItem -Path $prefixRegistry -Name '*license*'
 
         $installedFeatures = @()
-        if($files -match 'commandlinetools')
+        if ($files -match 'commandlinetools')
         {
             $installedFeatures += 'commandlinetools'
         }
-        if($files -match 'pgAdmin')
+        if ($files -match 'pgAdmin')
         {
             $installedFeatures += 'pgAdmin'
         }
-        if($files -match 'server')
+        if ($files -match 'server')
         {
             $installedFeatures += 'server'
         }
-        if($files -match 'StackBuilder')
+        if ($files -match 'StackBuilder')
         {
             $installedFeatures += 'stackbuilder'
         }
@@ -140,10 +135,10 @@ function Get-TargetResource
 
 <#
     .SYNOPSIS
-        Creates or removes the folder.
+        Installs or Uninstalls PostgreSQL.
 
     .PARAMETER Ensure
-        Specify if PostgreSQL should be absent or present
+        Specify if PostgreSQL should be absent or present.
 
     .PARAMETER Version
         The version of PostgreSQL that is going to be install or uninstalled.
@@ -247,7 +242,7 @@ function Set-TargetResource
             {
                 if ($arg -eq 'ServiceName')
                 {
-                    $finalServiceName = $ServiceName.Replace(" ", "_")
+                    $finalServiceName = $ServiceName.Replace(' ','_')
                     $arguments += "--servicename `"$finalServiceName`""
                     Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $finalServiceName)
                 }
@@ -280,7 +275,7 @@ function Set-TargetResource
         if (-not ($null -eq $ServiceAccount))
         {
             $arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
-            Write-Verbose -Message ($script:localizedData.ParameterSetTo -f "serviceaccount", $($ServiceAccount.UserName))
+            Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'serviceaccount', $($ServiceAccount.UserName))
 
             if (-not ($ServiceAccount.UserName -in $builtinAccounts))
             {
@@ -291,7 +286,7 @@ function Set-TargetResource
         if (-not ($null -eq $SuperAccount))
         {
             $arguments += "--superaccount `"$($SuperAccount.UserName)`""
-            Write-Verbose -Message ($script:localizedData.ParameterSetTo -f "SuperAccount", $($SuperAccount.UserName))
+            Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'SuperAccount', $($SuperAccount.UserName))
 
             $arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
         }
@@ -306,18 +301,19 @@ function Set-TargetResource
             }
             $i++
         }
+
         Write-Verbose -Message ($script:localizedData.StartingInstall)
-        Write-Verbose -Message ($script:localizedData.InstallString -f $InstallerPath, $($displayArguments -join " "))
-        $process = Start-Process $InstallerPath -ArgumentList ($arguments -join " ") -Wait -PassThru -NoNewWindow
+        Write-Verbose -Message ($script:localizedData.InstallString -f $InstallerPath, $($displayArguments -join ' '))
+        $process = Start-Process $InstallerPath -ArgumentList ($arguments -join ' ') -Wait -PassThru -NoNewWindow
         $exitCode = $process.ExitCode
 
         if ($exitCode -eq 0 -or $exitCode -eq 1641 -or $exitCode -eq 3010)
         {
-            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "installed", $exitCode)
+            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f 'installed', $exitCode)
         }
         else
         {
-            throw ($script:localizedData.PostgreSqlFailed -f "install", $exitCode)
+            throw ($script:localizedData.PostgreSqlFailed -f 'install', $exitCode)
         }
     }
     else
@@ -333,21 +329,21 @@ function Set-TargetResource
 
         if ($exitCode -eq 0 -or $null -eq $exitCode)
         {
-            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f "uninstalled", $exitCode)
+            Write-Verbose -Message ($script:localizedData.PostgreSqlSuccess -f 'uninstalled', $exitCode)
         }
         else
         {
-            throw  ($script:localizedData.PostgreSqlFailed -f "uninstall", $exitCode)
+            throw  ($script:localizedData.PostgreSqlFailed -f 'uninstall', $exitCode)
         }
     }
 }
 
 <#
     .SYNOPSIS
-        Creates or removes the folder.
+        Checks if the current status of PostgreSQL is the same as what is to be configured.
 
     .PARAMETER Ensure
-        Specify if PostgreSQL should be absent or present
+        Specify if PostgreSQL should be absent or present.
 
     .PARAMETER Version
         The version of PostgreSQL that is going to be install or uninstalled.
@@ -452,27 +448,27 @@ function Test-TargetResource
         {
             if ($getTargetResourceResults.Version -ne $Version)
             {
-                Write-Warning -Message ($script:localizedData.MismatchWarning -f "Version", $Version, $getTargetResourceResults.Version)
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f 'Version', $Version, $getTargetResourceResults.Version)
             }
             if ($getTargetResourceResults.ServiceName -ne $ServiceName -and $null -ne $ServiceName)
             {
-                Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceName", $ServiceName, $getTargetResourceResults.ServiceName)
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f 'ServiceName', $ServiceName, $getTargetResourceResults.ServiceName)
             }
             if ($getTargetResourceResults.InstallDirectory -ne $InstallDirectory -and $null -ne $InstallDirectory)
             {
-                Write-Warning -Message ($script:localizedData.MismatchWarning -f "InstallDirectory", $InstallDirectory, $getTargetResourceResults.InstallDirectory)
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f 'InstallDirectory', $InstallDirectory, $getTargetResourceResults.InstallDirectory)
             }
             if ($getTargetResourceResults.ServerPort -ne $ServerPort -and $null -ne $ServerPort)
             {
-                Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServerPort", $ServerPort, $getTargetResourceResults.ServerPort)
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f 'ServerPort', $ServerPort, $getTargetResourceResults.ServerPort)
             }
             if ($getTargetResourceResults.DataDirectory -ne $DataDirectory -and $null -ne $DataDirectory)
             {
-            Write-Warning -Message ($script:localizedData.MismatchWarning -f "DataDirectory", $DataDirectory, $getTargetResourceResults.DataDirectory)
+            Write-Warning -Message ($script:localizedData.MismatchWarning -f 'DataDirectory', $DataDirectory, $getTargetResourceResults.DataDirectory)
             }
             if ($getTargetResourceResults.ServiceAccount -ne $ServiceAccount.UserName -and $null -ne $ServiceAccount)
             {
-                Write-Warning -Message ($script:localizedData.MismatchWarning -f "ServiceAccount", $ServiceAccount.UserName, $getTargetResourceResults.ServiceAccount)
+                Write-Warning -Message ($script:localizedData.MismatchWarning -f 'ServiceAccount', $ServiceAccount.UserName, $getTargetResourceResults.ServiceAccount)
             }
             if ($null -ne $getTargetResourceResults.Features)
             {
@@ -485,16 +481,14 @@ function Test-TargetResource
                     }
                 }
 
-                if ($featureArray.count -ne $Features.Count)
+                foreach ($feature in $featureArray)
                 {
-                    foreach ($feature in $featureArray)
+                    if ($Features -notcontains $feature)
                     {
-                        if ($Features -notcontains $feature)
-                        {
-                            Write-Warning -Message ($script:localizedData.ExtraFeature -f $feature)
-                        }
+                        Write-Warning -Message ($script:localizedData.ExtraFeature -f $feature)
                     }
                 }
+
             }
         }
     }

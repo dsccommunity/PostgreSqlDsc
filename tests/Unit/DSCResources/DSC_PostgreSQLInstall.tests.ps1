@@ -227,7 +227,6 @@ try
         }
 
         Describe "$moduleResourceName\Test-TargetResource" {
-            Mock -CommandName Set-Location
 
             $getAllParamsPresent = $setAllParamsPresent.Clone()
             $getAllParamsPresent.ServiceAccount = 'NT AUTHORITY\NetworkService'
@@ -243,29 +242,41 @@ try
             $getParamsMismatch.ServiceAccount = 'LocalSystem'
             $getParamsMismatch.Features = 'commandlinetools,server,pgadmin'
 
+            $setParamsExtraFeatures = $setAllParamsPresent.Clone()
+            $setParamsExtraFeatures.Features = 'commandlinetools,server,pgadmin'
+
+
 
             Context 'When running Test-TargetResource where Postgres is installed' {
 
-                Context 'When parameters do not match installed values' {
+                It 'Should display warning when features are missing and return true' {
                     Mock -CommandName Get-TargetResource -MockWith { $getParamsMismatch }
                     Mock -CommandName Write-Warning
 
-                    It 'Should display warning when features are missing' {
-                        Test-TargetResource @setAllParamsPresent
-                        Assert-MockCalled Write-Warning -Exactly -Times 7 -Scope It
-                    }
+                    Test-TargetResource @setAllParamsPresent | Should -Be $true
+                    Assert-MockCalled Write-Warning -Exactly -Times 7 -Scope It
                 }
 
-                Context 'When suppliment parameters do match installed values'{
+                It 'Should display warning when features are missing and return true' {
                     Mock -CommandName Get-TargetResource -MockWith { $getAllParamsPresent }
-                    It 'Should return desired result true when ensure = present' {
-                        Test-TargetResource @setAllParamsPresent | Should -Be $true
-                    }
+                    Mock -CommandName Write-Warning
 
-                    It 'Should return desired result false when ensure = absent' {
-                        Test-TargetResource @setParamsAbsent | Should -Be $false
-                    }
+                    Test-TargetResource @setParamsExtraFeatures | Should -Be $true
+                    Assert-MockCalled Write-Warning -Exactly -Times 5 -Scope It
                 }
+
+                It 'Should return desired result true when ensure = present' {
+                    Mock -CommandName Get-TargetResource -MockWith { $getAllParamsPresent }
+
+                    Test-TargetResource @setAllParamsPresent | Should -Be $true
+                }
+
+                It 'Should return desired result false when ensure = absent' {
+                    Mock -CommandName Get-TargetResource -MockWith { $getAllParamsPresent }
+
+                    Test-TargetResource @setParamsAbsent | Should -Be $false
+                }
+
             }
 
             Context 'When running Test-TargetResource where Postgres is not installed' {
@@ -274,6 +285,7 @@ try
                 It 'Should return desired result false when ensure = present' {
                     Test-TargetResource @setAllParamsPresent | Should -Be $false
                 }
+
                 It 'Should return desired result true when ensure = absent' {
                     Test-TargetResource @setParamsAbsent | Should -Be $true
                 }
