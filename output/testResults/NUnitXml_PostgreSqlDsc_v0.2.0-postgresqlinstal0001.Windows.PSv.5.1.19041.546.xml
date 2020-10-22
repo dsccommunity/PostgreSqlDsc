@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="16" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2020-10-21" time="23:03:23">
+  <environment clr-version="4.0.30319.42000" user-domain="NORTHAMERICA" cwd="C:\Library\githubRepos\PostgreSqlDsc" platform="Microsoft Windows 10 Enterprise|C:\WINDOWS|\Device\Harddisk0\Partition3" machine-name="DESKTOP-PLU4B2K" nunit-version="2.5.8.0" os-version="10.0.19042" user="rychrist" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="3.8736" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="C:\Library\githubRepos\PostgreSqlDsc\tests\QA\module.tests.ps1" executed="True" result="Success" success="True" time="1.1339" asserts="0" description="C:\Library\githubRepos\PostgreSqlDsc\tests\QA\module.tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Changelog Management" executed="True" result="Success" success="True" time="1.0098" asserts="0" description="Changelog Management">
+            <results>
+              <test-case description="Changelog has been updated" name="Changelog Management.Changelog has been updated" time="0.4135" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Changelog format compliant with keepachangelog format" name="Changelog Management.Changelog format compliant with keepachangelog format" time="0.0237" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Library\githubRepos\PostgreSqlDsc\tests\Unit\DSCResources\DSC_PostgreSQLInstall.tests.ps1" executed="True" result="Success" success="True" time="2.7397" asserts="0" description="C:\Library\githubRepos\PostgreSqlDsc\tests\Unit\DSCResources\DSC_PostgreSQLInstall.tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Get-TargetResource" executed="True" result="Success" success="True" time="0.6312" asserts="0" description="PostgreSqlDsc - DSC_PostgreSqlInstall\Get-TargetResource">
+            <results>
+              <test-suite type="TestFixture" name="When getting current settings" executed="True" result="Success" success="True" time="0.4159" asserts="0" description="When getting current settings">
+                <results>
+                  <test-case description="Should return desired result when present" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Get-TargetResource.When getting current settings.Should return desired result when present" time="0.204" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should return desired result when absent" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Get-TargetResource.When getting current settings.Should return desired result when absent" time="0.086" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource" executed="True" result="Success" success="True" time="0.9901" asserts="0" description="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource">
+            <results>
+              <test-suite type="TestFixture" name="When Set-TargetResource runs successfully" executed="True" result="Success" success="True" time="0.52" asserts="0" description="When Set-TargetResource runs successfully">
+                <results>
+                  <test-case description="Should call expected commands when installing PostgreSql with builtin service account" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource.When Set-TargetResource runs successfully.Should call expected commands when installing PostgreSql with builtin service account" time="0.113" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should call expected commands when installing PostgreSql with domain service account" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource.When Set-TargetResource runs successfully.Should call expected commands when installing PostgreSql with domain service account" time="0.137" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should call expected commands when uninstalling PostgreSql" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource.When Set-TargetResource runs successfully.Should call expected commands when uninstalling PostgreSql" time="0.1153" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="When Set-TargetResource runs unsuccessfully" executed="True" result="Success" success="True" time="0.3647" asserts="0" description="When Set-TargetResource runs unsuccessfully">
+                <results>
+                  <test-case description="Should throw when the InstallerPath does not exist for install" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource.When Set-TargetResource runs unsuccessfully.Should throw when the InstallerPath does not exist for install" time="0.0471" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should throw when the exit code is not 0 or null for uninstall" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource.When Set-TargetResource runs unsuccessfully.Should throw when the exit code is not 0 or null for uninstall" time="0.1035" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should throw when the exit code is not 0, 1641, 3010 for install" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Set-TargetResource.When Set-TargetResource runs unsuccessfully.Should throw when the exit code is not 0, 1641, 3010 for install" time="0.0764" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource" executed="True" result="Success" success="True" time="0.9226" asserts="0" description="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource">
+            <results>
+              <test-suite type="TestFixture" name="When running Test-TargetResource where Postgres is installed" executed="True" result="Success" success="True" time="0.6416" asserts="0" description="When running Test-TargetResource where Postgres is installed">
+                <results>
+                  <test-case description="Should display warning when features are missing and return true" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource.When running Test-TargetResource where Postgres is installed.Should display warning when features are missing and return true" time="0.2011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should display warning when features are missing and return true" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource.When running Test-TargetResource where Postgres is installed.Should display warning when features are missing and return true" time="0.173" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should return desired result true when ensure = present" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource.When running Test-TargetResource where Postgres is installed.Should return desired result true when ensure = present" time="0.035" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should return desired result false when ensure = absent" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource.When running Test-TargetResource where Postgres is installed.Should return desired result false when ensure = absent" time="0.0432" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="When running Test-TargetResource where Postgres is not installed" executed="True" result="Success" success="True" time="0.165" asserts="0" description="When running Test-TargetResource where Postgres is not installed">
+                <results>
+                  <test-case description="Should return desired result false when ensure = present" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource.When running Test-TargetResource where Postgres is not installed.Should return desired result false when ensure = present" time="0.0217" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should return desired result true when ensure = absent" name="PostgreSqlDsc - DSC_PostgreSqlInstall\Test-TargetResource.When running Test-TargetResource where Postgres is not installed.Should return desired result true when ensure = absent" time="0.015" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
