@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'PostgreSqlDsc.psm1'
+#RootModule = 'PostgreSqlDsc.psm1'
 
 # Version number of this module.
 ModuleVersion = '0.0.1'
@@ -81,7 +81,9 @@ VariablesToExport = '*'
 AliasesToExport = '*'
 
 # DSC resources to export from this module
-# DscResourcesToExport = @()
+DscResourcesToExport = @(
+    'PostgreSqlInstall'
+)
 
 # List of all modules packaged with this module
 # ModuleList = @()
@@ -94,6 +96,7 @@ PrivateData = @{
 
     PSData = @{
 
+        Prerelease = ""
         # Tags applied to this module. These help with module discovery in online galleries.
         # Tags = @()
 
@@ -120,5 +123,3 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
-
-
