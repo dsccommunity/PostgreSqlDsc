@@ -54,24 +54,24 @@ try
         Describe "$moduleResourceName\Get-TargetResource" -Tag 'Get' {
             Context 'When Get-TargetResource runs successfully' {
                 It 'Should invoke psql and return expected results' {
-                    Mock Invoke-Command {return "<Script Output Sample>"}
+                    Mock Invoke-Command {return '<Script Output Sample>'}
 
                     $dscResult = Get-TargetResource @scriptParams
 
-                    Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
+                    Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 1 -Scope It
 
                     $dscResult.DatabaseName | Should -Be $scriptParams.DatabaseName
-                    $dscResult.SetFilePath | Should -Be "C:\set.sql"
-                    $dscResult.GetFilePath | Should -Be "C:\get.sql"
-                    $dscResult.TestFilePath | Should -Be "C:\test.sql"
-                    $dscResult.GetResult | Should -Be "<Script Output Sample>"
+                    $dscResult.SetFilePath | Should -Be 'C:\set.sql'
+                    $dscResult.GetFilePath | Should -Be 'C:\get.sql'
+                    $dscResult.TestFilePath | Should -Be 'C:\test.sql'
+                    $dscResult.GetResult | Should -Be '<Script Output Sample>'
                 }
             }
 
             Context 'When Get-TargetResource fails' {
                 It 'Should return a null result when psql is not found' {
                     $invalidParams = $scriptParams.Clone()
-                    $invalidParams.PsqlLocation = "does-not-exist.exe"
+                    $invalidParams.PsqlLocation = 'z:\does-not-exist.exe'
 
                     $dscResult = Get-TargetResource @invalidParams
                     $dscResult.DatabaseName | Should -Be $invalidParams.DatabaseName
@@ -91,11 +91,11 @@ try
                         Mock Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResults }
                     }
                     It 'Should invoke psql and call CREATE DATABASE by default' {
-                        Mock -CommandName Invoke-Command -Verifiable -MockWith {return ""} -ParameterFilter {$ScriptBlock -match 'CREATE DATABASE'}
+                        Mock -CommandName Invoke-Command -Verifiable -MockWith {return ''} -ParameterFilter {$ScriptBlock -match 'CREATE DATABASE'}
 
                         Set-TargetResource @scriptParams
                         Assert-VerifiableMock
-                        Assert-MockCalled Invoke-Command -Exactly -Times 3 -Scope It
+                        Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 3 -Scope It
                     }
 
                     It 'Should invoke psql and not create database when CreateDatabase parameter is false' {
@@ -104,8 +104,8 @@ try
 
                         Set-TargetResource @NoCreateParams
                         Assert-VerifiableMock
-                        Assert-MockCalled Invoke-Command -Exactly -Times 2 -Scope It
-                        Assert-MockCalled Invoke-Command -Times 0 -Scope It -ParameterFilter {$ScriptBlock -match "CREATE DATABASE"}
+                        Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 2 -Scope It
+                        Assert-MockCalled -CommandName Invoke-Command -Times 0 -Scope It -ParameterFilter {$ScriptBlock -match "CREATE DATABASE"}
                     }
                 }
 
@@ -116,8 +116,8 @@ try
 
                         Set-TargetResource @scriptParams
                         Assert-VerifiableMock
-                        Assert-MockCalled Invoke-Command -Exactly -Times 2 -Scope It
-                        Assert-MockCalled Invoke-Command -Times 0 -Scope It -ParameterFilter {$ScriptBlock -match "CREATE DATABASE"}
+                        Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 2 -Scope It
+                        Assert-MockCalled -CommandName Invoke-Command -Times 0 -Scope It -ParameterFilter {$ScriptBlock -match 'CREATE DATABASE'}
                     }
                 }
             }
@@ -125,9 +125,9 @@ try
             Context 'When Set-TargetResource fails' {
                 It 'Should throw when psql is not found' {
                     $invalidParams = $scriptParams.Clone()
-                    $invalidParams.PsqlLocation = "Z:\does-not-exist.exe"
+                    $invalidParams.PsqlLocation = 'Z:\does-not-exist.exe'
 
-                    {Set-TargetResource @invalidParams } | Should -Throw -ExpectedMessage "is not recognized as the name of a cmdlet, function"
+                    {Set-TargetResource @invalidParams } | Should -Throw -ExpectedMessage 'is not recognized as the name of a cmdlet, function'
                 }
 
                 It 'Should re-throw errors from psql' {
@@ -141,17 +141,17 @@ try
         Describe "$moduleResourceName\Test-TargetResource" -Tag 'Test' {
             Context 'When running Test-TargetResource is true' {
                 It 'Should return false when no exception is raised' {
-                    Mock Invoke-Command {return "true"}
+                    Mock Invoke-Command {return ''}
 
                     Test-TargetResource @scriptParams | Should -Be $true
-                    Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
+                    Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 1 -Scope It
                 }
 
-                It 'Should return False when an exception is raised""' {
+                It 'Should return False when an exception is raised' {
                     Mock Invoke-Command {return throw 'Testing'}
 
                     Test-TargetResource @scriptParams | Should -Be $false
-                    Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
+                    Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 1 -Scope It
                 }
             }
 
@@ -161,13 +161,13 @@ try
                 }
 
                 It 'Should return false when psql is not found' {
-                    $invalidParams.PsqlLocation = "Z:\does-not-exist.exe"
+                    $invalidParams.PsqlLocation = 'Z:\does-not-exist.exe'
 
                     Test-TargetResource @invalidParams | Should -Be $false
                 }
 
                 It 'Should return false when invalid script path is passed' {
-                    $invalidParams.TestFilePath = "Z:\does-not-exist.sql"
+                    $invalidParams.TestFilePath = 'Z:\does-not-exist.sql'
 
                     Test-TargetResource @invalidParams | Should -Be $false
                 }

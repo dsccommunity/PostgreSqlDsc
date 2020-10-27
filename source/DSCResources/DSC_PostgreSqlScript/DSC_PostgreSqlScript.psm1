@@ -22,7 +22,7 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
     .PARAMETER Credential
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
-        Location of the psql executable.  Defaults to "C:\Program Files\PostgreSQL\12\bin\psql.exe"
+        Location of the psql executable.  Defaults to "C:\Program Files\PostgreSQL\12\bin\psql.exe".
     .OUTPUTS
         Hash table containing key 'GetResult' which holds the value of the result from the SQL script that was ran from the parameter 'GetFilePath'.
 #>
@@ -51,7 +51,6 @@ function Get-TargetResource
 
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
         $Credential,
 
         [Parameter()]
@@ -129,7 +128,6 @@ function Set-TargetResource
 
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
         $Credential,
 
         [Parameter()]
@@ -146,27 +144,30 @@ function Set-TargetResource
 
     try
     {
-        Write-Verbose -Message ($script:localizedData.ExecutingSetScript -f $SetFilePath,$DatabaseName)
+        $DatabaseExists = $false
+        Write-Verbose -Message 'Listing Databases with psql.exe -lqt'
         $previousErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = "Stop"
-        $DbExists = $false;
-        $DbList = Invoke-Command -ScriptBlock {& $PsqlLocation -lqt 2>&1}
+        $DatabaseList = Invoke-Command -ScriptBlock {& $PsqlLocation -lqt 2>&1}
 
-        foreach ($db in $DbList)
+        foreach ($Database in $DatabaseList)
         {
-            if ($db.split("|")[0].trim() -eq $DatabaseName)
+            if ($Database.split("|")[0].trim() -eq $DatabaseName)
             {
-                $DbExists = $true
+                $DatabaseExists = $true
                 continue
             }
         }
 
-        if ($DbExists -eq $false -and $CreateDatabase)
+        if ($DatabaseExists -eq $false -and $CreateDatabase)
         {
+            Write-Verbose -Message "Creating database with 'CREATE DATABASE $DatabaseName'"
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c "CREATE DATABASE $DatabaseName"
             }
         }
+
+        Write-Verbose -Message ($script:localizedData.ExecutingSetScript -f $SetFilePath,$DatabaseName)
         Invoke-Command -ScriptBlock {
             & $PsqlLocation -d $DatabaseName -f $SetFilePath 2>&1
         }
@@ -195,7 +196,7 @@ function Set-TargetResource
         Path to the T-SQL file that will perform Set action.
     .PARAMETER GetFilePath
         Path to the T-SQL file that will perform Get action.
-        Any values returned by the T-SQL queries will also be returned by the cmdlet Get-DscConfiguration through the `GetResult` property.
+        Any values returned by the T-SQL queries will also be returned by the cmdlet Get-DscConfiguration through the 'GetResult' property.
     .PARAMETER TestFilePath
         Path to the T-SQL file that will perform Test action.
         Any script that does not throw an error is evaluated to true.
@@ -230,7 +231,6 @@ function Test-TargetResource
 
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
         $Credential,
 
         [Parameter()]
@@ -248,7 +248,6 @@ function Test-TargetResource
     try
     {
         Write-Verbose -Message ($script:localizedData.ExecutingTestScript -f $TestFilePath,$DatabaseName)
-        # Must redirect error stream into output stream to capture some errors from psql
         $previousErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = "Stop"
         $result = Invoke-Command -ScriptBlock {

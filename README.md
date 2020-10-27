@@ -36,9 +36,9 @@ This project has adopted this [Code of Conduct](CODE_OF_CONDUCT.md).
 | Parameter | Attribute | DataType | Description | Default
 | ---- | ---- | ---- | ---- | ---- |
 | DatabaseName | Key | String | Specifies the name of the _PostgreSQL_ database. | |
-| SetFilePath | Key | String | Path to the T-SQL file that will perform _Set_ action | |
-| GetFilePath | Key | String | Path to the T-SQL file that will perform _Get_ action | |
-| SetFilePath | Key | String | Path to the T-SQL file that will perform _Test_ action | |
-| Credential | Required | PsCredential | The credentials to authenticate with, using _Postgres Authentication_. | |
+| SetFilePath | Key | String | Path to the T-SQL file that will perform _Set_ action. | |
+| GetFilePath | Key | String | Path to the T-SQL file that will perform _Get_ action. | |
+| SetFilePath | Key | String | Path to the T-SQL file that will perform _Test_ action. | |
+| Credential | Write | PsCredential | The credentials to authenticate with, using _Postgres Authentication_. | |
 | PsqlLocation | Write | String | Location of the psql executable. | 'C:\Program Files\PostgreSQL\12\bin\psql.exe' Default |
-| CreateDatabase | Write | Boolean |  | $true Default |
+| CreateDatabase | Write | Boolean | Optionally creates a database if the database specified with DatabaseName doesn't exist. | $true Default |
