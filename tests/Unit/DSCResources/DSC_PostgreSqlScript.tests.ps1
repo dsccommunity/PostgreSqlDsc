@@ -140,29 +140,15 @@ try
 
         Describe "$moduleResourceName\Test-TargetResource" -Tag 'Test' {
             Context 'When running Test-TargetResource is true' {
-                It 'Should return True when script returns "true"' {
+                It 'Should return false when no exception is raised' {
                     Mock Invoke-Command {return "true"}
 
                     Test-TargetResource @scriptParams | Should -Be $true
                     Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
                 }
 
-                It 'Should return False when script returns ""' {
-                    Mock Invoke-Command {return ""}
-
-                    Test-TargetResource @scriptParams | Should -Be $false
-                    Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
-                }
-
-                it 'Should return False when script returns $null' {
-                    Mock Invoke-Command {return $null}
-
-                    Test-TargetResource @scriptParams | Should -Be $false
-                    Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
-                }
-
-                it 'Should return False when script returns "False"' {
-                    Mock Invoke-Command {return "False"}
+                It 'Should return False when an exception is raised""' {
+                    Mock Invoke-Command {return throw 'Testing'}
 
                     Test-TargetResource @scriptParams | Should -Be $false
                     Assert-MockCalled Invoke-Command -Exactly -Times 1 -Scope It
