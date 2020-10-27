@@ -11,13 +11,13 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
         Returns the current state of the PostgreSql install.
 
     .PARAMETER Ensure
-        Specify if PostgreSQL should be absent or present
+        Specify if PostgreSQL should be absent or present.
 
     .PARAMETER Version
         The version of PostgreSQL that is going to be install or uninstalled.
 
     .PARAMETER InstallerPath
-        The full path to the EDB Postgres installer.
+        The full path to the EDB PostgreSql installer.
 #>
 function Get-TargetResource
 {
@@ -41,7 +41,7 @@ function Get-TargetResource
     )
 
     Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
-    $registryKeys = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+    $registryKeys = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -eq "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PostgreSQL $Version"}
 
     if ($null -eq $registryKeys)
     {
@@ -65,7 +65,7 @@ function Get-TargetResource
 
         # Search Services for PostgreSQL so we can get the status of the service.
         Write-Verbose -Message ($script:localizedData.CheckingForService)
-        $services = Get-ChildItem -Path HKLM:\SYSTEM\CurrentControlSet\Services
+        $services = Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Services'
         foreach ($service in $services)
         {
             $value = Get-ItemProperty -Path $service.PSPath -Name ImagePath -ErrorAction SilentlyContinue
@@ -83,7 +83,7 @@ function Get-TargetResource
             $serviceDataDir = (($result.GetValue('ImagePath') -split ' -D')[1] -split ' -w')[0].Trim().Replace('"','')
         }
 
-        # Open config to check port
+        # Open config to check port.
         Write-Verbose -Message ($script:localizedData.CheckingConfig)
         $conf = Get-Content -Path "$serviceDataDir\postgresql.conf"
         foreach ($line in $conf)
@@ -94,39 +94,40 @@ function Get-TargetResource
             }
         }
 
-        # Check licenses that are in the install dir to see what features are installed
+        # Check licenses that are in the install dir to see what features are installed.
         Write-Verbose -Message ($script:localizedData.CheckingFeatures)
         $files = Get-ChildItem -Path $prefixRegistry -Name '*license*'
 
         $installedFeatures = @()
-        if ($files -match 'commandlinetools')
+        if ($files -contains 'commandlinetools_3rd_party_licenses.txt')
         {
             $installedFeatures += 'commandlinetools'
         }
-        if ($files -match 'pgAdmin')
+        if ($files -contains 'pgAdmin_license.txt')
         {
             $installedFeatures += 'pgAdmin'
         }
-        if ($files -match 'server')
+        if ($files -contains 'server_license.txt')
         {
             $installedFeatures += 'server'
         }
-        if ($files -match 'StackBuilder')
+        if ($files -contains 'StackBuilder_3rd_party_licenses.txt')
         {
             $installedFeatures += 'stackbuilder'
         }
 
         Write-Verbose -Message ($script:localizedData.FoundKeysForVersion -f $Version)
+
         $getResults = @{
             Ensure           = 'Present'
-            Version          = $registryKeys.GetValue('DisplayVersion')
+            Version          = $Version
             InstallerPath    = $InstallerPath
             InstallDirectory = $prefixRegistry
             ServiceName      = $serviceDisplayName
             ServiceAccount   = $serviceLogon
             DataDirectory    = $serviceDataDir
             ServerPort       = $confPort
-            Features         = $installedFeatures -join ','
+            Features         = $installedFeatures
         }
     }
 
@@ -141,22 +142,22 @@ function Get-TargetResource
         Specify if PostgreSQL should be absent or present.
 
     .PARAMETER Version
-        The version of PostgreSQL that is going to be install or uninstalled.
+        The version of PostgreSQL that is going to be installed or uninstalled.
 
     .PARAMETER InstallerPath
-       The full path to the EDB Postgres installer.
+       The full path to the EDB PostgreSql installer.
 
     .PARAMETER ServiceName
-        The name of the windows service that postgres will run under.
+        The name of the Windows service that PostgreSql will run under.
 
     .PARAMETER InstallationDirectory
-        The folder path that Postgre should be installed to.
+        The folder path that PostgreSql should be installed to.
 
     .PARAMETER ServerPort
-        The port that Postgres will listen on for incoming connections.
+        The port that PostgreSql will listen on for incoming connections.
 
     .PARAMETER DataDirectory
-        The path for all the data from this Postgres install.
+        The path for all the data from this PostgreSql install.
 
     .PARAMETER ServiceAccount
         The account that will be used to run the service.
@@ -165,7 +166,7 @@ function Get-TargetResource
         The account that will be the super account in PostgreSQL.
 
     .PARAMETER Features
-        The Postgres features to install.
+        The PostgreSql features to install.
 
     .PARAMETER OptionFile
         The file that has options for the install.
@@ -190,6 +191,7 @@ function Set-TargetResource
         $InstallerPath,
 
         [Parameter()]
+        [ValidateScript( { $_ -notcontains ' ' } )]
         [System.String]
         $ServiceName,
 
@@ -242,30 +244,29 @@ function Set-TargetResource
             {
                 if ($arg -eq 'ServiceName')
                 {
-                    $finalServiceName = $ServiceName.Replace(' ','_')
-                    $arguments += "--servicename `"$finalServiceName`""
-                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $finalServiceName)
+                    $arguments += '--servicename "{0}"' -f $ServiceName
+                    Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $ServiceName)
                 }
                 elseif ($arg -eq 'features')
                 {
                     $featuresToString = ($PSBoundParameters[$arg] -join ',').ToLower()
                     $finalFeatureString = $featuresToString.Replace('pgadmin', 'pgAdmin')
-                    $arguments += "--enable-components `"$finalFeatureString`""
+                    $arguments += '--enable-components "{0}"' -f $finalFeatureString
                     Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'enable-components', $finalFeatureString)
                 }
                 elseif ($arg -eq 'DataDirectory')
                 {
-                    $arguments += "--datadir `"$($PSBoundParameters[$arg])`""
+                    $arguments += '--datadir "{0}"' -f $($PSBoundParameters[$arg])
                     Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'datadir', $($PSBoundParameters[$arg]))
                 }
                 elseif ($arg -eq 'InstallDirectory')
                 {
-                    $arguments += "--prefix `"$($PSBoundParameters[$arg])`""
+                    $arguments += '--prefix "{0}"' -f $($PSBoundParameters[$arg])
                     Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'prefix', $($PSBoundParameters[$arg]))
                 }
                 else
                 {
-                    $arguments += "--$arg `"$($PSBoundParameters[$arg])`""
+                    $arguments += '--{0} "{1}"' -f $arg, $($PSBoundParameters[$arg])
                     Write-Verbose -Message ($script:localizedData.ParameterSetTo -f $arg, $($PSBoundParameters[$arg]))
                 }
             }
@@ -274,21 +275,21 @@ function Set-TargetResource
         $builtinAccounts = @('NT AUTHORITY\NetworkService', 'NT AUTHORITY\System', 'NT AUTHORITY\Local Service')
         if (-not ($null -eq $ServiceAccount))
         {
-            $arguments += "--serviceaccount `"$($ServiceAccount.UserName)`""
+            $arguments += '--serviceaccount "{0}"' -f $($ServiceAccount.UserName)
             Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'serviceaccount', $($ServiceAccount.UserName))
 
             if (-not ($ServiceAccount.UserName -in $builtinAccounts))
             {
-                $arguments += "--servicepassword $($ServiceAccount.GetNetworkCredential().Password)"
+                $arguments += '--servicepassword "{0}"' -f $($ServiceAccount.GetNetworkCredential().Password)
             }
         }
 
         if (-not ($null -eq $SuperAccount))
         {
-            $arguments += "--superaccount `"$($SuperAccount.UserName)`""
+            $arguments += '--superaccount "{0}"' -f $($SuperAccount.UserName)
             Write-Verbose -Message ($script:localizedData.ParameterSetTo -f 'SuperAccount', $($SuperAccount.UserName))
 
-            $arguments += "--superpassword `"$($SuperAccount.GetNetworkCredential().Password)`""
+            $arguments += '--superpassword "{0}"' -f $($SuperAccount.GetNetworkCredential().Password)
         }
 
         $displayArguments = $arguments.Clone()
@@ -313,13 +314,14 @@ function Set-TargetResource
         }
         else
         {
-            throw ($script:localizedData.PostgreSqlFailed -f 'install', $exitCode)
+            $logPath = "$env:TEMP\instabuilder_installer.log"
+            throw ($script:localizedData.PostgreSqlFailed -f 'install', $exitCode, $logPath)
         }
     }
     else
     {
         Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
-        $uninstallRegistry = Get-ChildItem -Path 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -match "PostgreSQL $Version"}
+        $uninstallRegistry = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -eq "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PostgreSQL $Version"}
         $uninstallString = $uninstallRegistry.GetValue('UninstallString')
 
         Write-Verbose -Message ($script:localizedData.PosgreSqlUninstall)
@@ -333,7 +335,8 @@ function Set-TargetResource
         }
         else
         {
-            throw  ($script:localizedData.PostgreSqlFailed -f 'uninstall', $exitCode)
+            $logPath = "$env:TEMP\instabuilder_installer.log"
+            throw  ($script:localizedData.PostgreSqlFailed -f 'uninstall', $exitCode, $logPath)
         }
     }
 }
@@ -346,22 +349,22 @@ function Set-TargetResource
         Specify if PostgreSQL should be absent or present.
 
     .PARAMETER Version
-        The version of PostgreSQL that is going to be install or uninstalled.
+        The version of PostgreSQL that is going to be installed or uninstalled.
 
     .PARAMETER InstallerPath
-       The full path to the EDB Postgres installer.
+       The full path to the EDB PostgreSql installer.
 
     .PARAMETER ServiceName
-        The name of the windows service that postgres will run under.
+        The name of the Windows service that PostgreSql will run under.
 
     .PARAMETER InstallDirectory
-        The folder path that Postgre should be installed to.
+        The folder path that PostgreSql should be installed to.
 
     .PARAMETER ServerPort
-        The server port that Postgres will listen on for incoming connections.
+        The server port that PostgreSql will listen on for incoming connections.
 
     .PARAMETER DataDirectory
-        The path for all the data from this Postgres install.
+        The path for all the data from this PostgreSql install.
 
     .PARAMETER ServiceAccount
         The account that will be used to run the service.
@@ -370,7 +373,7 @@ function Set-TargetResource
         The account that will be the super account in PostgreSQL.
 
     .PARAMETER Features
-        The Postgres features to install.
+        The PostgreSql features to install.
 
     .PARAMETER OptionFile
         The file that has options for the install.
@@ -396,6 +399,7 @@ function Test-TargetResource
         $InstallerPath,
 
         [Parameter()]
+        [ValidateScript( { $_ -notcontains ' ' } )]
         [System.String]
         $ServiceName,
 

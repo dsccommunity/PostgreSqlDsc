@@ -115,21 +115,19 @@ try
             New-Item -Path 'TestDrive:\' -Name 'PostgreSql' -Type Directory
             New-Item -Path 'TestDrive:\PostgreSql\' -Name 'Data'-Type Directory
             New-Item -Path 'TestDrive:\PostgreSql\Data' -Name 'postgresql.conf' -Type File
-            Set-Content $postgreSqlConfig -Value 'port = 5432                # (change requires restart)'
+            Set-Content -Path $postgreSqlConfig -Value 'port = 5432                # (change requires restart)'
 
             #build Licenses
-            Set-Content 'TestDrive:\PostgreSql\commandlinetools_3rd_party_licenses.txt' -Value 'license'
-            Set-Content 'TestDrive:\PostgreSql\pgAdmin_license.txt' -Value 'license'
-            Set-Content 'TestDrive:\PostgreSql\server_license.txt' -Value 'license'
-            Set-Content 'TestDrive:\PostgreSql\StackBuilder_3rd_party_licenses.txt' -Value 'license'
+            Set-Content -Path 'TestDrive:\PostgreSql\commandlinetools_3rd_party_licenses.txt' -Value 'license'
+            Set-Content -Path 'TestDrive:\PostgreSql\pgAdmin_license.txt' -Value 'license'
+            Set-Content -Path 'TestDrive:\PostgreSql\server_license.txt' -Value 'license'
+            Set-Content -Path 'TestDrive:\PostgreSql\StackBuilder_3rd_party_licenses.txt' -Value 'license'
 
 
             Context 'When getting current settings' {
                 It 'Should return desired result when present' {
                     Mock -CommandName Get-ChildItem -MockWith { $mockUninstallregistry } -ParameterFilter {$Path -eq 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
                     Mock -CommandName Get-ChildItem -MockWith { $mockServicesRegistry } -ParameterFilter {$Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Services'}
-
-
 
                     $result = Get-TargetResource @getParams
                     $result                  | Should -BeOfType System.Collections.HashTable
@@ -143,7 +141,6 @@ try
                     $result.ServerPort       | Should -Be -ExpectedValue '5432'
                     $result.Features         | Should -Be -ExpectedValue 'commandlinetools,pgAdmin,server,stackbuilder'
                 }
-
 
                 It 'Should return desired result when absent' {
                     Mock -CommandName Get-ChildItem -MockWith { $null } -ParameterFilter {$Path -eq 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
@@ -163,12 +160,10 @@ try
             }
         }
 
-
         Describe "$moduleResourceName\Set-TargetResource" -Tag 'Set'{
             New-Item -Path TestRegistry:\ -Name 'PostgreSql 12'
             New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'Name' -Value 'PostgreSql 12'
             New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'UninstallString' -Value 'C:\PostgreSQL\uninstall-postgresql.exe'
-
 
             $mockUninstallStringRegistry = Get-ChildItem -Path 'TestRegistry:\'
 
@@ -245,8 +240,6 @@ try
             $setParamsExtraFeatures = $setAllParamsPresent.Clone()
             $setParamsExtraFeatures.Features = 'commandlinetools,server,pgadmin'
 
-
-
             Context 'When running Test-TargetResource where Postgres is installed' {
 
                 It 'Should display warning when features are missing and return true' {
@@ -276,7 +269,6 @@ try
 
                     Test-TargetResource @setParamsAbsent | Should -Be $false
                 }
-
             }
 
             Context 'When running Test-TargetResource where Postgres is not installed' {
@@ -290,7 +282,6 @@ try
                     Test-TargetResource @setParamsAbsent | Should -Be $true
                 }
             }
-
         }
     }
 }
