@@ -191,7 +191,7 @@ function Set-TargetResource
         $InstallerPath,
 
         [Parameter()]
-        [ValidateScript( { $_ -notcontains ' ' } )]
+        [ValidateScript( {$_ -notmatch '\s'})]
         [System.String]
         $ServiceName,
 
@@ -213,6 +213,7 @@ function Set-TargetResource
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
         $SuperAccount,
 
         [Parameter()]
@@ -399,7 +400,6 @@ function Test-TargetResource
         $InstallerPath,
 
         [Parameter()]
-        [ValidateScript( { $_ -notcontains ' ' } )]
         [System.String]
         $ServiceName,
 
@@ -421,6 +421,7 @@ function Test-TargetResource
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
+        [System.Management.Automation.Credential()]
         $SuperAccount,
 
         [Parameter()]
