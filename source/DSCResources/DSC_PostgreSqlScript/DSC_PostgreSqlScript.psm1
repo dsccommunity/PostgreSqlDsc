@@ -164,7 +164,7 @@ function Set-TargetResource
         if ($DbExists -eq $false -and $CreateDatabase)
         {
             Invoke-Command -ScriptBlock {
-                & $PsqlLocation -c "CREATE DATABASE $DatabaseName"
+                & $PsqlLocation -d 'postgres' -c "CREATE DATABASE $DatabaseName"
             }
         }
         Invoke-Command -ScriptBlock {
