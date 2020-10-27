@@ -144,24 +144,24 @@ function Set-TargetResource
 
     try
     {
-        $DatabaseExists = $false
-        Write-Verbose -Message 'Listing Databases with psql.exe -lqt'
+        $databaseExists = $false
+        Write-Verbose -Message ($script:localizedData.ListingDatabases)
         $previousErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = "Stop"
-        $DatabaseList = Invoke-Command -ScriptBlock {& $PsqlLocation -lqt 2>&1}
+        $databaseList = Invoke-Command -ScriptBlock {& $PsqlLocation -lqt 2>&1}
 
-        foreach ($Database in $DatabaseList)
+        foreach ($database in $databaseList)
         {
-            if ($Database.split("|")[0].trim() -eq $DatabaseName)
+            if ($database.split("|")[0].trim() -eq $DatabaseName)
             {
-                $DatabaseExists = $true
+                $databaseExists = $true
                 continue
             }
         }
 
-        if ($DatabaseExists -eq $false -and $CreateDatabase)
+        if ($databaseExists -eq $false -and $CreateDatabase)
         {
-            Write-Verbose -Message "Creating database with 'CREATE DATABASE $DatabaseName'"
+            Write-Verbose -Message ($script:localizedData.CreatingDatabases -f $DatabaseName)
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c "CREATE DATABASE $DatabaseName"
             }
