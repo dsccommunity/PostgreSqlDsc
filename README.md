@@ -12,6 +12,8 @@ This project has adopted this [Code of Conduct](CODE_OF_CONDUCT.md).
 ## Resources
 
 - **PostgreSqlInstall**: Installs Postgres using the installer from EDB.
+- **PostgreSqlScript**: Allows scripts to be executed against PostgreSql databases using psql.exe.
+
 
 ### PostgreSqlInstall
 
@@ -28,3 +30,15 @@ This project has adopted this [Code of Conduct](CODE_OF_CONDUCT.md).
 | SuperAccount | Write | PSCredential | Specifies the account used as Super Admin for the Postgres Install | postgres / default  |
 | Features | Write | String[] | Specifies the components to be installed. | Postgres Default |
 | OptionFile | Write | String | Specifies the path of an option file for the installer. See Postgres Installer help for details | |
+
+### PostgreSqlScript
+
+| Parameter | Attribute | DataType | Description | Default
+| ---- | ---- | ---- | ---- | ---- |
+| DatabaseName | Key | String | Specifies the name of the _PostgreSQL_ database. | |
+| SetFilePath | Key | String | Path to the T-SQL file that will perform _Set_ action.  This script should perform whatever action desired against the target database. | |
+| GetFilePath | Key | String | Path to the T-SQL file that will perform _Get_ action.  This script should provide general output of the current state of the database in relation to the Set script.  Any result from executing the get script (including errors) will be returned. | |
+| SetFilePath | Key | String | Path to the T-SQL file that will perform _Test_ action.  This script should test the database to ensure correct configuration, and should throw an exception when found to not be in the correct state.  Any script that does not throw an error is evaluated to $true. | |
+| Credential | Write | PsCredential | The credentials to authenticate with, using _Postgres Authentication_. | |
+| PsqlLocation | Write | String | Location of the psql executable. | 'C:\Program Files\PostgreSQL\12\bin\psql.exe' Default |
+| CreateDatabase | Write | Boolean | Optionally creates a database if the database specified with DatabaseName doesn't exist. | $true Default |
