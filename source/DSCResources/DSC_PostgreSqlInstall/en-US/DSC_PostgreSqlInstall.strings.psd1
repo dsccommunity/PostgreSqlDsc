@@ -12,7 +12,7 @@ ConvertFrom-StringData @'
     CheckingConfig = Checking PostGreSQL configuration for current port.
     CheckingFeatures = Checking for installed licenses to determine what features are installed.
     PathIsMissing = The path for the installation file does not exist: {0}.
-    PostgreSqlFailed = PostgreSQL {0} failed with exit code {1}.
+    PostgreSqlFailed = PostgreSQL {0} failed with exit code {1}. A log file is created at the following path {2}.
     PostgreSqlSuccess = PostgreSql {0} successfully with exit code: {1}.
     PosgreSqlUninstall = Starting PostgreSql Uninstall.
     ParameterSetTo = Parameter {0} set to {1}.

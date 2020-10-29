@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- PostgreSqlInstall
+- Added PostgreSqlInstall resource
   - Install Postgres with specified features
 - Added PostgreSqlScript resource
   - Run T-SQL Scripts against Postgres

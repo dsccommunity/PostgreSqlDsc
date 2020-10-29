@@ -1,10 +1,8 @@
 output/
-
 **.bak
 *.local.*
 !**/README.md
 .kitchen/
-
 *.suo
 *.user
 *.coverage
