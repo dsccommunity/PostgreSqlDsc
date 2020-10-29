@@ -83,6 +83,7 @@ AliasesToExport = '*'
 # DSC resources to export from this module
 DscResourcesToExport = @(
     'PostgreSqlInstall'
+    'PostgreSqlScript'
 )
 
 # List of all modules packaged with this module
