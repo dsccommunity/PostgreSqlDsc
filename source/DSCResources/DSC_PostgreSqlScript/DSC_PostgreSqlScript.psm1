@@ -18,11 +18,13 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
         Any values returned by the T-SQL queries will also be returned by the cmdlet Get-DscConfiguration through the `GetResult` property.
     .PARAMETER TestFilePath
         Path to the T-SQL file that will perform Test action.
-        Any script that does not throw an error or returns null is evaluated to true.
+        Any script that does not throw an error is evaluated to true.
     .PARAMETER Credential
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
         Location of the psql executable.  Defaults to "C:\Program Files\PostgreSQL\12\bin\psql.exe".
+    .PARAMETER CreateDatabase
+        Optionally creates a database if the database specified with DatabaseName doesn't exist.  Defaults to $true.
     .OUTPUTS
         Hash table containing key 'GetResult' which holds the value of the result from the SQL script that was ran from the parameter 'GetFilePath'.
 #>
@@ -55,7 +57,11 @@ function Get-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
+        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe',
+
+        [Parameter()]
+        [bool]
+        $CreateDatabase = $true
     )
 
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
@@ -79,6 +85,7 @@ function Get-TargetResource
         GetFilePath      = $GetFilePath
         TestFilePath     = $TestFilePath
         GetResult        = [System.String[]] $getResult
+        CreateDatabase   = $CreateDatabase
     }
 
     return $returnValue
@@ -97,7 +104,7 @@ function Get-TargetResource
         Any values returned by the T-SQL queries will also be returned by the cmdlet Get-DscConfiguration through the `GetResult` property.
     .PARAMETER TestFilePath
         Path to the T-SQL file that will perform Test action.
-        Any script that does not throw an error or returns null is evaluated to true.
+        Any script that does not throw an error is evaluated to true.
     .PARAMETER Credential
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation

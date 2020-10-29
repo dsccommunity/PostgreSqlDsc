@@ -54,7 +54,7 @@ try
         Describe "$moduleResourceName\Get-TargetResource" -Tag 'Get' {
             Context 'When Get-TargetResource runs successfully' {
                 It 'Should invoke psql and return expected results' {
-                    Mock Invoke-Command {return '<Script Output Sample>'}
+                    Mock -CommandName Invoke-Command {return '<Script Output Sample>'}
 
                     $dscResult = Get-TargetResource @scriptParams
 
@@ -88,7 +88,7 @@ try
                 }
                 Context 'When database does not exist' {
                     BeforeEach {
-                        Mock Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResults }
+                        Mock -CommandName Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResults }
                     }
                     It 'Should invoke psql and call CREATE DATABASE by default' {
                         Mock -CommandName Invoke-Command -Verifiable -MockWith {return ''} -ParameterFilter {$ScriptBlock -match 'CREATE DATABASE'}
@@ -112,7 +112,7 @@ try
                 Context 'When database exists' {
                     It 'Should not call CREATE DATABASE' {
                         $psqlListResultsWithDatabase = @(" $($scriptParams.DatabaseName)      | postgres | UTF8")
-                        Mock Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResultsWithDatabase }
+                        Mock -CommandName Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResultsWithDatabase }
 
                         Set-TargetResource @scriptParams
                         Assert-VerifiableMock
@@ -131,7 +131,7 @@ try
                 }
 
                 It 'Should re-throw errors from psql' {
-                    Mock Invoke-Command -MockWith {throw [System.Management.Automation.RemoteException]}
+                    Mock -CommandName Invoke-Command -MockWith {throw [System.Management.Automation.RemoteException]}
 
                     {Set-TargetResource @scriptParams} | Should -Throw
                 }
@@ -141,14 +141,14 @@ try
         Describe "$moduleResourceName\Test-TargetResource" -Tag 'Test' {
             Context 'When running Test-TargetResource is true' {
                 It 'Should return false when no exception is raised' {
-                    Mock Invoke-Command {return ''}
+                    Mock -CommandName Invoke-Command {return ''}
 
                     Test-TargetResource @scriptParams | Should -Be $true
                     Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 1 -Scope It
                 }
 
                 It 'Should return False when an exception is raised' {
-                    Mock Invoke-Command {return throw 'Testing'}
+                    Mock -CommandName Invoke-Command {return throw 'Testing'}
 
                     Test-TargetResource @scriptParams | Should -Be $false
                     Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 1 -Scope It
