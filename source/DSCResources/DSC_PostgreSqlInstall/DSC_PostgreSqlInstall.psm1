@@ -41,7 +41,7 @@ function Get-TargetResource
     )
 
     Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
-    $registryKeys = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -eq "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PostgreSQL $Version"}
+    $registryKeys = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {($($_.Name -Split '\\')[-1]) -eq "PostgreSQL $Version"}
 
     if ($null -eq $registryKeys)
     {
@@ -322,7 +322,7 @@ function Set-TargetResource
     else
     {
         Write-Verbose -Message ($script:localizedData.SearchingRegistry -f $Version)
-        $uninstallRegistry = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {$_.Name -eq "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PostgreSQL $Version"}
+        $uninstallRegistry = Get-ChildItem -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object -FilterScript {($($_.Name -Split '\\')[-1]) -eq "PostgreSQL $Version"}
         $uninstallString = $uninstallRegistry.GetValue('UninstallString')
 
         Write-Verbose -Message ($script:localizedData.PosgreSqlUninstall)

@@ -93,7 +93,7 @@ try
         }
 
         Describe "$moduleResourceName\Get-TargetResource" {
-            # Create registry to mock the uninstall location HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall
+            # Create registry to mock the uninstall location HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall
             New-Item -Path TestRegistry:\ -Name 'PostgreSql 12'
             New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'Name' -Value 'PostgreSql 12'
             New-ItemProperty -Path 'TestRegistry:\PostgreSql 12' -Name 'InstallLocation' -Value 'TestDrive:\PostgreSql'
@@ -126,7 +126,7 @@ try
 
             Context 'When getting current settings' {
                 It 'Should return desired result when present' {
-                    Mock -CommandName Get-ChildItem -MockWith { $mockUninstallregistry } -ParameterFilter {$Path -eq 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
+                    Mock -CommandName Get-ChildItem -MockWith { $mockUninstallregistry } -ParameterFilter {$Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
                     Mock -CommandName Get-ChildItem -MockWith { $mockServicesRegistry } -ParameterFilter {$Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Services'}
 
                     $result = Get-TargetResource @getParams
@@ -139,11 +139,11 @@ try
                     $result.ServiceAccount   | Should -Be -ExpectedValue 'NT AUTHORITY\NetworkService'
                     $result.DataDirectory    | Should -Be -ExpectedValue 'TestDrive:\PostgreSql\Data'
                     $result.ServerPort       | Should -Be -ExpectedValue '5432'
-                    $result.Features         | Should -Be -ExpectedValue 'commandlinetools,pgAdmin,server,stackbuilder'
+                    $result.Features         | Should -Be -ExpectedValue @('commandlinetools','pgAdmin','server','stackbuilder')
                 }
 
                 It 'Should return desired result when absent' {
-                    Mock -CommandName Get-ChildItem -MockWith { $null } -ParameterFilter {$Path -eq 'HKLM:\\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
+                    Mock -CommandName Get-ChildItem -MockWith { $null } -ParameterFilter {$Path -eq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'}
 
                     $result = Get-TargetResource @getParams
                     $result                  | Should -BeOfType System.Collections.HashTable
