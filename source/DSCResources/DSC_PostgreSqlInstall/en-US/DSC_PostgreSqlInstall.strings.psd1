@@ -15,6 +15,7 @@ ConvertFrom-StringData @'
     PostgreSqlFailed = PostgreSQL {0} failed with exit code {1}. A log file is created at the following path {2}.
     PostgreSqlSuccess = PostgreSql {0} successfully with exit code: {1}.
     PosgreSqlUninstall = Starting PostgreSql Uninstall.
+    UninstallString = Starting Process {0} with arguments {1}.
     ParameterSetTo = Parameter {0} set to {1}.
     StartingInstall = Starting Install of PostgreSQL.
     InstallString = {0} with arguments {1}.

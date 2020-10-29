@@ -168,7 +168,7 @@ function Set-TargetResource
 
         if ($databaseExists -eq $false -and $CreateDatabase)
         {
-            Write-Verbose -Message ($script:localizedData.CreatingDatabases -f $DatabaseName)
+            Write-Verbose -Message ($script:localizedData.CreatingDatabase -f $DatabaseName)
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c "CREATE DATABASE $DatabaseName"
             }
