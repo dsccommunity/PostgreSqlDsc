@@ -32,6 +32,7 @@ function Get-TargetResource
         $DatabaseName,
 
         [Parameter(Mandatory = $true)]
+        [ValidateSet('Present', 'Absent')]
         [System.String]
         $Ensure,
 
@@ -101,6 +102,7 @@ function Set-TargetResource
         $DatabaseName,
 
         [Parameter(Mandatory = $true)]
+        [ValidateSet('Present', 'Absent')]
         [System.String]
         $Ensure,
 
@@ -167,6 +169,7 @@ function Test-TargetResource
         $DatabaseName,
 
         [Parameter(Mandatory = $true)]
+        [ValidateSet('Present', 'Absent')]
         [System.String]
         $Ensure,
 

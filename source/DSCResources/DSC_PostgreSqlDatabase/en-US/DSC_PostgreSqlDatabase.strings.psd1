@@ -13,4 +13,5 @@ ConvertFrom-StringData @'
     ExpectedPresentButAbsent = Expected database to be Present but is Absent.
     ExpectedAbsentButPresent = Expected database to be Absent but is Present.
     TestReturn = Test-TargetResource returned {0}.
+    PsqlNotFound = Command line executable psql.exe not found at location {0}.  Please ensure commandline option was installed from the PostgreSQL EDB installer.
 '@
