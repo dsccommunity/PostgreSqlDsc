@@ -6,7 +6,6 @@ class DSC_PostgreSqlScript : OMI_BaseResource
     [Key, Description("Path to the T-SQL file that will perform _Get_ action. Any values returned by the T-SQL queries will also be returned when calling _Get_ (for example by using the cmdlet Get-DscConfiguration) through the GetResult property.")] String GetFilePath;
     [Key, Description("Path to the T-SQL file that will perform _Test_ action. Any script that does not throw an error is evaluated to `$true`.")] String TestFilePath;
     [Write, Description("Location of the psql executable.  Defaults to 'C:\\Program Files\\PostgreSQL\\12\\bin\\psql.exe'.")] String PsqlLocation;
-    [Write, Description("Optionally creates a database if the database specified with DatabaseName does not exist.  Defaults to `$true`.")] Boolean CreateDatabase;
     [Required, Description("The credentials to authenticate with, using _Postgres Authentication_."), EmbeddedInstance("MSFT_Credential")] String Credential;
     [Read, Description("Returns the result from the T-SQL script provided in the parameter **GetFilePath** when _Get_ was called.")] String GetResult[];
 };

@@ -43,6 +43,7 @@ AliasesToExport = @()
 DscResourcesToExport = @(
     'PostgreSqlInstall'
     'PostgreSqlScript'
+    'PostgreSqlDatabase'
 )
 
 RequiredAssemblies = @()

@@ -1,8 +1,8 @@
 [ClassVersion("1.0.0"), FriendlyName("PostgreSqlInstall")]
 class DSC_PostgreSqlInstall : OMI_BaseResource
 {
-    [Key,ValueMap{"Present", "Absent"},Values{"Present", "Absent"}] String Ensure;
-    [Required,ValueMap{"9", "10", "11", "12", "13"},Values{"9", "10", "11", "12", "13"}] String Version;
+    [Key, Description("Specifies if PostgreSql is present or absent"), ValueMap{"Present", "Absent"},Values{"Present", "Absent"}] String Ensure;
+    [Required, Description("Specifies what version of PostgreSQL is install or uninstalled"), ValueMap{"9", "10", "11", "12", "13"},Values{"9", "10", "11", "12", "13"}] String Version;
     [Required, Description("Specifies the path of the installer.")] String InstallerPath;
     [Write, Description("Specifies the name of the Postgres service.")] String ServiceName;
     [Write, Description("Specifies the install directory for the install.")] String InstallDirectory;
