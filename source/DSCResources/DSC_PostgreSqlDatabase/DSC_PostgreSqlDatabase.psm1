@@ -12,7 +12,7 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
     .PARAMETER DatabaseName
         Specifies the name of the PostgreSQL database.
     .PARAMETER Ensure
-        Spoecifies if the database should be present or absent.
+        Specifies if the database should be present or absent.
     .PARAMETER Credential
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
@@ -42,7 +42,7 @@ function Get-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
+        $PsqlLocation = "$env:ProgramFiles\PostgreSQL\12\bin\psql.exe"
     )
 
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
@@ -86,7 +86,7 @@ function Get-TargetResource
     .PARAMETER DatabaseName
         Specifies the name of the PostgreSQL database.
     .PARAMETER Ensure
-        Spoecifies if the database should be present or absent.
+        Specifies if the database should be present or absent.
     .PARAMETER Credential
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
@@ -112,7 +112,7 @@ function Set-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
+        $PsqlLocation = "$env:ProgramFiles\PostgreSQL\12\bin\psql.exe"
     )
 
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
@@ -152,7 +152,7 @@ function Set-TargetResource
     .PARAMETER DatabaseName
         Specifies the name of the PostgreSQL database.
     .PARAMETER Ensure
-        Spoecifies if the database should be present or absent.
+        Specifies if the database should be present or absent.
     .PARAMETER Credential
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
@@ -179,7 +179,7 @@ function Test-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
+        $PsqlLocation = "$env:ProgramFiles\PostgreSQL\12\bin\psql.exe"
     )
 
     $getTargetResourceParameters = @{
