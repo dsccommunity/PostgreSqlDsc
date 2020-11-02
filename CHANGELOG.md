@@ -11,3 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Install Postgres with specified features
 - Added PostgreSqlScript resource
   - Run T-SQL Scripts against Postgres
+- Added PostgreSqlDatabase resource
+  - Add and remove database in PostgresSql
+
+### Changed
+
+- Removed CreateDatabase from PostgreSqlScript
+
+### Removed
+
+### Fixed

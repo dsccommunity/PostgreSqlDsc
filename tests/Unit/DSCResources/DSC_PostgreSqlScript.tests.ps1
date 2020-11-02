@@ -83,42 +83,13 @@ try
 
         Describe "$moduleResourceName\Set-TargetResource" -Tag 'Set'{
             Context 'When Set-TargetResource runs successfully' {
-                BeforeAll {
-                    Mock -CommandName Invoke-Command -MockWith {}
-                }
-                Context 'When database does not exist' {
-                    BeforeEach {
-                        Mock -CommandName Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResults }
-                    }
-                    It 'Should invoke psql and call CREATE DATABASE by default' {
-                        Mock -CommandName Invoke-Command -Verifiable -MockWith {return ''} -ParameterFilter {$ScriptBlock -match 'CREATE DATABASE'}
 
-                        Set-TargetResource @scriptParams
-                        Assert-VerifiableMock
-                        Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 3 -Scope It
-                    }
+                It 'Should invoke psql and not throw' {
+                    Mock -CommandName Invoke-Command -Verifiable
 
-                    It 'Should invoke psql and not create database when CreateDatabase parameter is false' {
-                        $NoCreateParams = $scriptParams.Clone()
-                        $NoCreateParams.CreateDatabase = $false
-
-                        Set-TargetResource @NoCreateParams
-                        Assert-VerifiableMock
-                        Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 2 -Scope It
-                        Assert-MockCalled -CommandName Invoke-Command -Times 0 -Scope It -ParameterFilter {$ScriptBlock -match "CREATE DATABASE"}
-                    }
-                }
-
-                Context 'When database exists' {
-                    It 'Should not call CREATE DATABASE' {
-                        $psqlListResultsWithDatabase = @(" $($scriptParams.DatabaseName)      | postgres | UTF8")
-                        Mock -CommandName Invoke-Command -Verifiable -ParameterFilter {$ScriptBlock -match '-lqt 2>&1'} -MockWith { return $psqlListResultsWithDatabase }
-
-                        Set-TargetResource @scriptParams
-                        Assert-VerifiableMock
-                        Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 2 -Scope It
-                        Assert-MockCalled -CommandName Invoke-Command -Times 0 -Scope It -ParameterFilter {$ScriptBlock -match 'CREATE DATABASE'}
-                    }
+                    Set-TargetResource @scriptParams
+                    Assert-VerifiableMock
+                    Assert-MockCalled -CommandName Invoke-Command -Exactly -Times 1 -Scope It
                 }
             }
 

@@ -1,6 +1,6 @@
 <#
     .SYNOPSIS
-        A DSC configuration script to run a PostgreSQL script against a database.
+        A DSC configuration script to delete a database in PostgreSql.
 #>
 Configuration Example
 {
@@ -16,12 +16,10 @@ Configuration Example
 
     Node localhost
     {
-        PostgreSqlScript ExampleSetting
+        PostgreSqlDatabase ExampleSetting
         {
+            Ensure       = 'Absent'
             DatabaseName = 'testdb1'
-            SetFilePath  = 'c:\dev\set.sql'
-            GetFilePath  = 'c:\dev\get.sql'
-            TestFilePath = 'c:\dev\test.sql'
             Credential   = $PostgresAccount
         }
     }

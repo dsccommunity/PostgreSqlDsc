@@ -23,8 +23,6 @@ $script:localizedData = Get-LocalizedData -DefaultUICulture en-US
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
         Location of the psql executable.  Defaults to "C:\Program Files\PostgreSQL\12\bin\psql.exe".
-    .PARAMETER CreateDatabase
-        Optionally creates a database if the database specified with DatabaseName doesn't exist.  Defaults to $true.
     .OUTPUTS
         Hash table containing key 'GetResult' which holds the value of the result from the SQL script that was ran from the parameter 'GetFilePath'.
 #>
@@ -57,11 +55,7 @@ function Get-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe',
-
-        [Parameter()]
-        [bool]
-        $CreateDatabase = $true
+        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
     )
 
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
@@ -78,14 +72,17 @@ function Get-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.PsqlNotFound -f $PsqlLocation)
     }
+    catch
+    {
+        Write-Verbose -Message $_.exception.message
+    }
 
     $returnValue = @{
-        DatabaseName     = $DatabaseName
-        SetFilePath      = $SetFilePath
-        GetFilePath      = $GetFilePath
-        TestFilePath     = $TestFilePath
-        GetResult        = [System.String[]] $getResult
-        CreateDatabase   = $CreateDatabase
+        DatabaseName = $DatabaseName
+        SetFilePath  = $SetFilePath
+        GetFilePath  = $GetFilePath
+        TestFilePath = $TestFilePath
+        GetResult    = [System.String[]] $getResult
     }
 
     return $returnValue
@@ -109,8 +106,6 @@ function Get-TargetResource
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
         Location of the psql executable.  Defaults to "C:\Program Files\PostgreSQL\12\bin\psql.exe".
-    .PARAMETER CreateDatabase
-        Optionally creates a database if the database specified with DatabaseName doesn't exist.  Defaults to $true.
 #>
 function Set-TargetResource
 {
@@ -139,11 +134,7 @@ function Set-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe',
-
-        [Parameter()]
-        [bool]
-        $CreateDatabase = $true
+        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
     )
 
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
@@ -151,33 +142,10 @@ function Set-TargetResource
 
     try
     {
-        $databaseExists = $false
-        Write-Verbose -Message ($script:localizedData.ListingDatabases)
-        $previousErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = "Stop"
-        $databaseList = Invoke-Command -ScriptBlock {& $PsqlLocation -lqt 2>&1}
-
-        foreach ($database in $databaseList)
-        {
-            if ($database.split("|")[0].trim() -eq $DatabaseName)
-            {
-                $databaseExists = $true
-                continue
-            }
-        }
-
-        if ($databaseExists -eq $false -and $CreateDatabase)
-        {
-            Write-Verbose -Message ($script:localizedData.CreatingDatabase -f $DatabaseName)
-            Invoke-Command -ScriptBlock {
-                & $PsqlLocation -d 'postgres' -c "CREATE DATABASE $DatabaseName"
-            }
-        }
-
         Write-Verbose -Message ($script:localizedData.ExecutingSetScript -f $SetFilePath,$DatabaseName)
         Invoke-Command -ScriptBlock {
             & $PsqlLocation -d $DatabaseName -f $SetFilePath 2>&1
-        }
+        } -ErrorAction Stop
     }
     catch [System.Management.Automation.CommandNotFoundException]
     {
@@ -187,10 +155,6 @@ function Set-TargetResource
     catch
     {
         throw $_
-    }
-    finally
-    {
-        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 
@@ -211,8 +175,6 @@ function Set-TargetResource
         The credentials to authenticate with, using PostgreSQL Authentication.
     .PARAMETER PsqlLocation
         Location of the psql executable.  Defaults to "C:\Program Files\PostgreSQL\12\bin\psql.exe".
-    .PARAMETER CreateDatabase
-        Optionally creates a database if the database specified with DatabaseName doesn't exist.  Defaults to $true.
 #>
 function Test-TargetResource
 {
@@ -242,11 +204,7 @@ function Test-TargetResource
 
         [Parameter()]
         [System.String]
-        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe',
-
-        [Parameter()]
-        [bool]
-        $CreateDatabase = $true
+        $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
     )
 
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
@@ -255,11 +213,9 @@ function Test-TargetResource
     try
     {
         Write-Verbose -Message ($script:localizedData.ExecutingTestScript -f $TestFilePath,$DatabaseName)
-        $previousErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = "Stop"
         $result = Invoke-Command -ScriptBlock {
             & $PsqlLocation -d $DatabaseName -f $TestFilePath 2>&1
-        }
+        } -ErrorAction Stop
 
         Write-Verbose -Message ($script:localizedData.ReturnValue -f $true)
         return $true
@@ -275,10 +231,6 @@ function Test-TargetResource
         Write-Verbose -Message $_.exception.message
         Write-Verbose -Message ($script:localizedData.ReturnValue -f $false)
         return $false
-    }
-    finally
-    {
-        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 

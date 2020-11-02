@@ -12,8 +12,9 @@ This project has adopted this [Code of Conduct](CODE_OF_CONDUCT.md).
 ## Resources
 
 - **PostgreSqlInstall**: Installs Postgres using the installer from EDB.
-- **PostgreSqlScript**: Allows scripts to be executed against PostgreSql databases using psql.exe.
-
+- **PostgreSqlScript**: Allows scripts to be executed against PostgreSql
+databases using psql.exe.
+- **PostgreSqlDatabase**: Creates or removes PostgreSql databases.
 
 ### PostgreSqlInstall
 
@@ -42,3 +43,12 @@ This project has adopted this [Code of Conduct](CODE_OF_CONDUCT.md).
 | Credential | Write | PsCredential | The credentials to authenticate with, using _Postgres Authentication_. | |
 | PsqlLocation | Write | String | Location of the psql executable. | 'C:\Program Files\PostgreSQL\12\bin\psql.exe' Default |
 | CreateDatabase | Write | Boolean | Optionally creates a database if the database specified with DatabaseName doesn't exist. | $true Default |
+
+### PostgreSqlScript
+
+| Parameter | Attribute | DataType | Description | Default
+| ---- | ---- | ---- | ---- | ---- |
+| DatabaseName | Key | String | Specifies the name of the _PostgreSQL_ database. | |
+| Ensure | Required | String | Specifies if the database should be present or absent | |
+| Credential | Required | PsCredential | The credentials to authenticate with, using _Postgres Authentication_. | |
+| PsqlLocation | Write | String | Location of the psql executable. | 'C:\Program Files\PostgreSQL\12\bin\psql.exe' Default |

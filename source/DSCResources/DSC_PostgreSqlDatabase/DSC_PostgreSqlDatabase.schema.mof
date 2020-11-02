@@ -1,0 +1,8 @@
+[ClassVersion("1.0.0"), FriendlyName("PostgreSqlDatabase")]
+class DSC_PostgreSqlDatabase : OMI_BaseResource
+{
+    [Key, Description("Specifies the name of the _PostgreSQL_ database.")] String DatabaseName;
+    [Required, Description("Specifiy if a database should be present or absent"), ValueMap{"Present", "Absent"},Values{"Present", "Absent"}] String Ensure;
+    [Write, Description("Location of the psql executable.  Defaults to 'C:\\Program Files\\PostgreSQL\\12\\bin\\psql.exe'.")] String PsqlLocation;
+    [Required, Description("The credentials to authenticate with, using _Postgres Authentication_."), EmbeddedInstance("MSFT_Credential")] String Credential;
+};
