@@ -115,6 +115,9 @@ function Set-TargetResource
         $PsqlLocation = "$env:ProgramFiles\PostgreSQL\12\bin\psql.exe"
     )
 
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Stop"
+
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
     $env:PGUSER = $Credential.UserName
 
@@ -125,14 +128,14 @@ function Set-TargetResource
             Write-Verbose -Message ($script:localizedData.CreatingDatabase -f $DatabaseName)
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c "CREATE DATABASE $DatabaseName"
-            } -ErrorAction Stop
+            }
         }
         else
         {
             Write-Verbose -Message ($script:localizedData.DeletingDatabase -f $DatabaseName)
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c "DROP DATABASE $DatabaseName"
-            } -ErrorAction Stop
+            }
         }
     }
     catch [System.Management.Automation.CommandNotFoundException]
@@ -143,6 +146,10 @@ function Set-TargetResource
     catch
     {
         throw $_
+    }
+    finally
+    {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 
