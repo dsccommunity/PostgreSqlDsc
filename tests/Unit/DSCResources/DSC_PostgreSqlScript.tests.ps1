@@ -98,7 +98,7 @@ try
                     $invalidParams = $scriptParams.Clone()
                     $invalidParams.PsqlLocation = 'Z:\does-not-exist.exe'
 
-                    {Set-TargetResource @invalidParams } | Should -Throw -ExpectedMessage 'The term 'Z:\does-not-exist.exe' is not recognized as the name of a cmdlet, function, script file, or executable program.'
+                    {Set-TargetResource @invalidParams } | Should -Throw -ExpectedMessage "The term 'Z:\does-not-exist.exe' is not recognized as the name of a cmdlet, function, script file, or executable program.
                 }
 
                 It 'Should re-throw errors from psql' {
