@@ -97,7 +97,7 @@ try
                 It 'Should throw when psql is not found' {
                     $invalidParams = $scriptParams.Clone()
                     $invalidParams.PsqlLocation = 'Z:\does-not-exist.exe'
-                    $errorMessage = "The term `'Z:\does-not-exist.exe`' is not recognized as a name of a cmdlet, function, script file, or executable program.`nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+                    $errorMessage = "The term `'Z:\does-not-exist.exe`' is not recognized as a name of a cmdlet, function, script file, or executable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again."
 
                     {Set-TargetResource @invalidParams } | Should -Throw -ExpectedMessage $errorMessage
                 }
