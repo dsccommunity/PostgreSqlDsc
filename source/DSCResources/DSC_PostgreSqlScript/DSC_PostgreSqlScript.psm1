@@ -223,7 +223,7 @@ function Test-TargetResource
     try
     {
         Write-Verbose -Message ($script:localizedData.ExecutingTestScript -f $TestFilePath,$DatabaseName)
-        Invoke-Command -ScriptBlock {
+        $null = Invoke-Command -ScriptBlock {
             & $PsqlLocation -d $($DatabaseName.ToLower()) -f $TestFilePath 2>&1
         }
 
