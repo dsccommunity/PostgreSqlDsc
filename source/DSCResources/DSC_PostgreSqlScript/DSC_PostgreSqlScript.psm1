@@ -65,7 +65,7 @@ function Get-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.ExecutingGetScript -f $GetFilePath,$DatabaseName)
         $getResult = Invoke-Command -ScriptBlock {
-            & $PsqlLocation -d $DatabaseName -f $GetFilePath
+            & $PsqlLocation -d $($DatabaseName.ToLower()) -f $GetFilePath
         }
     }
     catch [System.Management.Automation.CommandNotFoundException]
@@ -147,7 +147,7 @@ function Set-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.ExecutingSetScript -f $SetFilePath,$DatabaseName)
         Invoke-Command -ScriptBlock {
-            & $PsqlLocation -d $DatabaseName -f $SetFilePath 2>&1
+            & $PsqlLocation -d $($DatabaseName.ToLower()) -f $SetFilePath 2>&1
         }
     }
     catch [System.Management.Automation.CommandNotFoundException]
@@ -224,7 +224,7 @@ function Test-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.ExecutingTestScript -f $TestFilePath,$DatabaseName)
         Invoke-Command -ScriptBlock {
-            & $PsqlLocation -d $DatabaseName -f $TestFilePath 2>&1
+            & $PsqlLocation -d $($DatabaseName.ToLower()) -f $TestFilePath 2>&1
         }
 
         Write-Verbose -Message ($script:localizedData.ReturnValue -f $true)

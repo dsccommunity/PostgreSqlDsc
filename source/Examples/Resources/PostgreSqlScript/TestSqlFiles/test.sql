@@ -17,6 +17,6 @@ $do$*/
 DO $$
 BEGIN
 IF NOT exists (SELECT * FROM information_schema.tables Where table_schema = 'public' AND table_name = 'Users')
-THEN RAISE INFO 'hi';
+THEN RAISE INFO 'Message that is returned and causes failure.';
 END IF;
 END $$
