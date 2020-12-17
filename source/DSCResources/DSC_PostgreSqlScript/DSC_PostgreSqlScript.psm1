@@ -65,7 +65,7 @@ function Get-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.ExecutingGetScript -f $GetFilePath,$DatabaseName)
         $getResult = Invoke-Command -ScriptBlock {
-            & $PsqlLocation -d $DatabaseName -f $GetFilePath
+            & $PsqlLocation -d $($DatabaseName.ToLower()) -f $GetFilePath
         }
     }
     catch [System.Management.Automation.CommandNotFoundException]
@@ -137,6 +137,9 @@ function Set-TargetResource
         $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
     )
 
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Stop"
+
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
     $env:PGUSER = $Credential.UserName
 
@@ -144,8 +147,8 @@ function Set-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.ExecutingSetScript -f $SetFilePath,$DatabaseName)
         Invoke-Command -ScriptBlock {
-            & $PsqlLocation -d $DatabaseName -f $SetFilePath 2>&1
-        } -ErrorAction Stop
+            & $PsqlLocation -d $($DatabaseName.ToLower()) -f $SetFilePath 2>&1
+        }
     }
     catch [System.Management.Automation.CommandNotFoundException]
     {
@@ -155,6 +158,10 @@ function Set-TargetResource
     catch
     {
         throw $_
+    }
+    finally
+    {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 
@@ -207,15 +214,18 @@ function Test-TargetResource
         $PsqlLocation = 'C:\Program Files\PostgreSQL\12\bin\psql.exe'
     )
 
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Stop"
+
     $env:PGPASSWORD = $Credential.GetNetworkCredential().Password
     $env:PGUSER = $Credential.UserName
 
     try
     {
         Write-Verbose -Message ($script:localizedData.ExecutingTestScript -f $TestFilePath,$DatabaseName)
-        $result = Invoke-Command -ScriptBlock {
-            & $PsqlLocation -d $DatabaseName -f $TestFilePath 2>&1
-        } -ErrorAction Stop
+        $null = Invoke-Command -ScriptBlock {
+            & $PsqlLocation -d $($DatabaseName.ToLower()) -f $TestFilePath 2>&1
+        }
 
         Write-Verbose -Message ($script:localizedData.ReturnValue -f $true)
         return $true
@@ -231,6 +241,10 @@ function Test-TargetResource
         Write-Verbose -Message $_.exception.message
         Write-Verbose -Message ($script:localizedData.ReturnValue -f $false)
         return $false
+    }
+    finally
+    {
+        $ErrorActionPreference = $previousErrorActionPreference
     }
 }
 
