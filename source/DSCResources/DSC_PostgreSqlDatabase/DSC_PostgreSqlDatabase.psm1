@@ -125,7 +125,7 @@ function Set-TargetResource
     {
         if ($Ensure -eq 'Present')
         {
-            $createDatabaseString = '"CREATE DATABASE ""{0}""' -f $DatabaseName
+            $createDatabaseString = '"CREATE DATABASE \"{0}\""' -f $DatabaseName
             Write-Verbose -Message ($script:localizedData.CreatingDatabase -f $DatabaseName)
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c $createDatabaseString
@@ -133,7 +133,7 @@ function Set-TargetResource
         }
         else
         {
-            $deleteDatabaseString = '"DROP DATABASE ""{0}""' -f $DatabaseName
+            $deleteDatabaseString = '"DROP DATABASE \"{0}\""' -f $DatabaseName
             Write-Verbose -Message ($script:localizedData.DeletingDatabase -f $DatabaseName)
             Invoke-Command -ScriptBlock {
                 & $PsqlLocation -d 'postgres' -c $deleteDatabaseString
