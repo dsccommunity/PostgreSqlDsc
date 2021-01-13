@@ -23,3 +23,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed issue with Invoke-Command returning errors during test and set.
+- Fixed issue with creating a database where casing could be lost on the 
+database name.
